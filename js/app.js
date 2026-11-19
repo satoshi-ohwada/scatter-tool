@@ -91,6 +91,13 @@ document.addEventListener('DOMContentLoaded', () => {
     btnModalDeselectAll: document.getElementById('btnModalDeselectAll'),
     btnModalClearHighlight: document.getElementById('btnModalClearHighlight'),
 
+    // 貼り付けモーダル
+    pasteModal: document.getElementById('pasteModal'),
+    btnClosePasteModal: document.getElementById('btnClosePasteModal'),
+    btnCancelPaste: document.getElementById('btnCancelPaste'),
+    btnApplyPaste: document.getElementById('btnApplyPaste'),
+    pasteTextarea: document.getElementById('pasteTextarea'),
+
     // サマリーホバーウィジェット
     summaryHoverWidget: document.getElementById('summaryHoverWidget'),
     summaryHoverTrigger: document.getElementById('summaryHoverTrigger'),
@@ -354,19 +361,40 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // クリップボードからの貼り付け解析
-  async function pasteFromClipboard() {
-    try {
-      const text = await navigator.clipboard.readText();
-      if (!text || text.trim() === '') {
-        showToast('クリップボードにテキストがありません。', 'warning');
-        return;
+  // 貼り付けモーダルの開閉
+  function openPasteModal() {
+    if (elements.pasteModal) {
+      elements.pasteModal.style.display = 'flex';
+      if (elements.pasteTextarea) {
+        elements.pasteTextarea.value = '';
+        setTimeout(() => elements.pasteTextarea.focus(), 60);
       }
-      const table = DataParser.parseCSVText(text);
-      applyTableData(table, 'クリップボード');
-    } catch (err) {
-      showToast(`貼り付けに失敗しました: ${err.message}`, 'error');
     }
+  }
+
+  function closePasteModal() {
+    if (elements.pasteModal) {
+      elements.pasteModal.style.display = 'none';
+    }
+  }
+
+  // クリップボードからの貼り付け解析 (権限ブロック・非セキュア環境でも確実に動くモーダルフォールバック)
+  async function pasteFromClipboard() {
+    if (navigator.clipboard && navigator.clipboard.readText) {
+      try {
+        const text = await navigator.clipboard.readText();
+        if (text && text.trim() !== '') {
+          const table = DataParser.parseCSVText(text);
+          applyTableData(table, 'クリップボード');
+          showToast(`クリップボードから ${table.totalCount} 件のデータを読み込みました`, 'success');
+          return;
+        }
+      } catch (err) {
+        console.warn('Clipboard readText failed or permission denied, falling back to paste modal:', err);
+      }
+    }
+    // 権限がブロックされた場合、ブラウザ非対応、または空の場合は貼り付けモーダルを提示
+    openPasteModal();
   }
 
   // ファイル読み込みハンドラ
@@ -414,13 +442,16 @@ document.addEventListener('DOMContentLoaded', () => {
   // ショートカット: 画面全体へのペースト (Ctrl+V)
   window.addEventListener('paste', (e) => {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-    const text = (e.clipboardData || window.clipboardData).getData('text');
+    const clip = e.clipboardData || window.clipboardData;
+    if (!clip) return;
+    const text = clip.getData('text');
     if (text && text.trim()) {
       try {
         const table = DataParser.parseCSVText(text);
         applyTableData(table, '貼り付けデータ');
+        showToast(`データを貼り付けました (${table.totalCount}件)`, 'success');
       } catch (err) {
-        // パース失敗は静かに無視
+        showToast(`貼り付けデータの解析に失敗しました: ${err.message}`, 'warning');
       }
     }
   });
@@ -922,6 +953,33 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // 貼り付けモーダル操作イベント
+  if (elements.btnApplyPaste) {
+    elements.btnApplyPaste.addEventListener('click', () => {
+      const text = elements.pasteTextarea ? elements.pasteTextarea.value : '';
+      if (!text || text.trim() === '') {
+        showToast('貼り付けるデータが入力されていません', 'warning');
+        return;
+      }
+      try {
+        const table = DataParser.parseCSVText(text);
+        applyTableData(table, '貼り付けデータ');
+        closePasteModal();
+        showToast(`データを読み込みました (${table.totalCount}件)`, 'success');
+      } catch (err) {
+        showToast(`データの解析に失敗しました: ${err.message}`, 'error');
+      }
+    });
+  }
+
+  if (elements.btnClosePasteModal) elements.btnClosePasteModal.addEventListener('click', closePasteModal);
+  if (elements.btnCancelPaste) elements.btnCancelPaste.addEventListener('click', closePasteModal);
+  if (elements.pasteModal) {
+    elements.pasteModal.addEventListener('click', (e) => {
+      if (e.target === elements.pasteModal) closePasteModal();
+    });
+  }
+
   // テーブル内リアルタイム検索
   if (elements.modalSearch) {
     elements.modalSearch.addEventListener('input', (e) => {
@@ -958,6 +1016,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'Escape') {
       if (elements.dataModal && elements.dataModal.style.display !== 'none') {
         closeDataModal();
+      }
+      if (elements.pasteModal && elements.pasteModal.style.display !== 'none') {
+        closePasteModal();
       }
     }
   });

@@ -11,11 +11,16 @@ const DataParser = {
     let str = String(val).trim();
     if (str === '' || str === '-' || str === '－' || str === '−' || str === '―' || str === 'NA' || str === 'N/A' || str === 'null') return NaN;
 
-    // 全角英数字・記号を半角に変換
+    // 全角英数字・記号を半角に変換、日本の統計・会計記号 (▲, △) をマイナスに変換
     str = str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
-    str = str.replace(/[－−]/g, '-').replace(/．/g, '.').replace(/％/g, '%').replace(/＋/g, '+');
+    str = str.replace(/[－−―ー]/g, '-').replace(/[▲△]/g, '-').replace(/．/g, '.').replace(/％/g, '%').replace(/＋/g, '+');
     // カンマ、通貨記号、空白を除去
     str = str.replace(/[,\s¥￥$]/g, '');
+
+    // 括弧付き負数 (例: (120) -> -120, (5.2%) -> -5.2%) の処理
+    if (/^\((.+)\)$/.test(str)) {
+      str = '-' + str.slice(1, -1);
+    }
 
     // パーセント記号の処理
     if (str.endsWith('%')) {
