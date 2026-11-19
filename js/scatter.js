@@ -269,7 +269,7 @@ class ScatterPlot {
       const x = r[xKey];
       const y = r[yKey];
       if (typeof x === 'number' && !isNaN(x) && typeof y === 'number' && !isNaN(y)) {
-        validRows.push({ ...r, _id: r._rowId || idx + 1, _x: x, _y: y, _name: r[labelKey] || `No.${idx + 1}` });
+        validRows.push({ ...r, _id: typeof r._rowId === 'number' ? r._rowId : idx, _x: x, _y: y, _name: r[labelKey] || `No.${idx + 1}` });
         xValues.push(x);
         yValues.push(y);
       }
@@ -831,13 +831,17 @@ class ScatterPlot {
       }
       g.appendChild(rect);
 
-      // テキスト
+      // テキスト (囲み枠の中央に完全配置)
       const txt = document.createElementNS(svgNS, "text");
+      txt.setAttribute("x", "0");
+      txt.setAttribute("y", "0.5"); // 和文フォントメトリクスの視覚的垂直中央補正
       txt.setAttribute("text-anchor", "middle");
       txt.setAttribute("dominant-baseline", "central");
+      txt.setAttribute("alignment-baseline", "central");
       txt.setAttribute("fill", isHl ? "#c2410c" : theme.labelText);
       txt.setAttribute("font-size", this.options.fontSize);
       txt.setAttribute("font-weight", (isHl || label.userMoved) ? "bold" : "normal");
+      txt.setAttribute("font-family", "system-ui, -apple-system, sans-serif");
       txt.textContent = label.name;
       g.appendChild(txt);
 
