@@ -29,6 +29,7 @@ class ScatterPlot {
       showLine45: false,
       lockAspect1to1: false,
       showRegression: true,
+      showRegressionEquation: false, // 回帰式・決定係数のグラフ内表示 (デフォルト控えめ/非表示)
       showConfidenceInterval: true,
       labelMode: 'all', // 'all', 'outliers', 'top5', 'none'
       showLeaderLines: true,
@@ -502,47 +503,61 @@ class ScatterPlot {
       regLine.setAttribute("stroke-width", "2");
       svg.appendChild(regLine);
 
-      // 回帰統計ボックス (右下または左上の空きスペースに表示)
-      const statBox = document.createElementNS(svgNS, "g");
-      const boxW = 195;
-      const boxH = 48;
-      const boxX = margin.left + plotW - boxW - 12;
-      const boxY = margin.top + 12;
+      // 回帰統計ボックス (控えめで上品なミニマルデザイン & 表示・非表示選択対応)
+      if (this.options.showRegressionEquation) {
+        const sign = regression.intercept >= 0 ? '+' : '-';
+        const absIntercept = Math.abs(regression.intercept).toFixed(2);
+        const eqText = `y = ${regression.slope.toFixed(2)}x ${sign} ${absIntercept}`;
+        const r2Text = `R² = ${regression.r2.toFixed(3)}`;
 
-      const boxBg = document.createElementNS(svgNS, "rect");
-      boxBg.setAttribute("x", boxX);
-      boxBg.setAttribute("y", boxY);
-      boxBg.setAttribute("width", boxW);
-      boxBg.setAttribute("height", boxH);
-      boxBg.setAttribute("rx", "6");
-      boxBg.setAttribute("fill", "rgba(255, 255, 255, 0.92)");
-      boxBg.setAttribute("stroke", theme.regLine);
-      boxBg.setAttribute("stroke-width", "1");
-      statBox.appendChild(boxBg);
+        const statBox = document.createElementNS(svgNS, "g");
+        statBox.setAttribute("class", "regression-stat-badge");
 
-      const sign = regression.intercept >= 0 ? '+' : '-';
-      const absIntercept = Math.abs(regression.intercept).toFixed(2);
-      const eqText = `y = ${regression.slope.toFixed(2)}x ${sign} ${absIntercept}`;
-      const statText = `R² = ${regression.r2.toFixed(3)}  (r = ${regression.r.toFixed(3)})`;
+        // 控えめな横長インラインバッジ
+        const textLen = (eqText + "  " + r2Text).length;
+        const boxW = Math.max(140, textLen * 6.4 + 16);
+        const boxH = 22;
+        const boxX = margin.left + plotW - boxW - 8;
+        const boxY = margin.top + 8;
 
-      const t1 = document.createElementNS(svgNS, "text");
-      t1.setAttribute("x", boxX + 10);
-      t1.setAttribute("y", boxY + 20);
-      t1.setAttribute("fill", theme.regLine);
-      t1.setAttribute("font-size", "11");
-      t1.setAttribute("font-weight", "bold");
-      t1.textContent = eqText;
-      statBox.appendChild(t1);
+        const boxBg = document.createElementNS(svgNS, "rect");
+        boxBg.setAttribute("x", boxX);
+        boxBg.setAttribute("y", boxY);
+        boxBg.setAttribute("width", boxW);
+        boxBg.setAttribute("height", boxH);
+        boxBg.setAttribute("rx", "11");
+        boxBg.setAttribute("fill", "rgba(255, 255, 255, 0.88)");
+        boxBg.setAttribute("stroke", "#cbd5e1");
+        boxBg.setAttribute("stroke-width", "0.8");
+        statBox.appendChild(boxBg);
 
-      const t2 = document.createElementNS(svgNS, "text");
-      t2.setAttribute("x", boxX + 10);
-      t2.setAttribute("y", boxY + 38);
-      t2.setAttribute("fill", theme.text);
-      t2.setAttribute("font-size", "11");
-      t2.textContent = statText;
-      statBox.appendChild(t2);
+        const t = document.createElementNS(svgNS, "text");
+        t.setAttribute("x", boxX + boxW / 2);
+        t.setAttribute("y", boxY + 14.5);
+        t.setAttribute("text-anchor", "middle");
+        t.setAttribute("font-size", "10");
+        t.setAttribute("font-family", "monospace, system-ui, sans-serif");
 
-      svg.appendChild(statBox);
+        const tSpanEq = document.createElementNS(svgNS, "tspan");
+        tSpanEq.setAttribute("fill", theme.regLine);
+        tSpanEq.setAttribute("font-weight", "600");
+        tSpanEq.textContent = eqText;
+        t.appendChild(tSpanEq);
+
+        const tSpanSep = document.createElementNS(svgNS, "tspan");
+        tSpanSep.setAttribute("fill", "#94a3b8");
+        tSpanSep.textContent = "   ";
+        t.appendChild(tSpanSep);
+
+        const tSpanR2 = document.createElementNS(svgNS, "tspan");
+        tSpanR2.setAttribute("fill", "#334155");
+        tSpanR2.setAttribute("font-weight", "bold");
+        tSpanR2.textContent = r2Text;
+        t.appendChild(tSpanR2);
+
+        statBox.appendChild(t);
+        svg.appendChild(statBox);
+      }
     }
 
     // 5. 4象限十字線 & 象限ラベル

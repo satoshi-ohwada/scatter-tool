@@ -35,6 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
     chkLine45: document.getElementById('chkLine45'),
     chkAspect1to1: document.getElementById('chkAspect1to1'),
     chkRegression: document.getElementById('chkRegression'),
+    chkRegressionEq: document.getElementById('chkRegressionEq'),
     chkConfidence: document.getElementById('chkConfidence'),
 
     // 象限ラベル
@@ -69,6 +70,17 @@ document.addEventListener('DOMContentLoaded', () => {
     btnSavePNG: document.getElementById('btnSavePNG'),
     btnCopyPNG: document.getElementById('btnCopyPNG'),
     btnCopySummary: document.getElementById('btnCopySummary'),
+
+    // データ確認モーダル
+    btnViewData: document.getElementById('btnViewData'),
+    btnViewDataSidebar: document.getElementById('btnViewDataSidebar'),
+    dataModal: document.getElementById('dataModal'),
+    btnCloseModal: document.getElementById('btnCloseModal'),
+    modalDataCount: document.getElementById('modalDataCount'),
+    modalSearch: document.getElementById('modalSearch'),
+    btnCopyTableCSV: document.getElementById('btnCopyTableCSV'),
+    dataTableHead: document.getElementById('dataTableHead'),
+    dataTableBody: document.getElementById('dataTableBody'),
 
     // サマリーエリア
     summaryContent: document.getElementById('summaryContent'),
@@ -112,6 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
       showLine45: elements.chkLine45.checked,
       lockAspect1to1: elements.chkAspect1to1.checked,
       showRegression: elements.chkRegression.checked,
+      showRegressionEquation: elements.chkRegressionEq.checked,
       showConfidenceInterval: elements.chkConfidence.checked,
       labelMode: elements.selectLabelMode.value,
       showLeaderLines: elements.chkLeaderLines.checked
@@ -191,8 +204,11 @@ document.addEventListener('DOMContentLoaded', () => {
     state.tableData = parsedTable;
 
     // ファイル情報バッジ表示
-    elements.fileInfo.textContent = `${fileName ? fileName + ' : ' : ''}${parsedTable.totalCount} 行 / ${parsedTable.columns.length} 列`;
+    elements.fileInfo.textContent = `${fileName ? fileName + ' : ' : ''}${parsedTable.totalCount} 行 / ${parsedTable.columns.length} 列 (クリックで確認)`;
     elements.fileInfo.style.display = 'inline-block';
+    if (elements.btnViewDataSidebar) {
+      elements.btnViewDataSidebar.style.display = 'block';
+    }
 
     // セレクターを更新
     elements.selectLabel.innerHTML = '';
@@ -350,6 +366,7 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.chkLine45,
     elements.chkAspect1to1,
     elements.chkRegression,
+    elements.chkRegressionEq,
     elements.chkConfidence,
     elements.selectLabelMode,
     elements.chkLeaderLines,
@@ -509,6 +526,120 @@ document.addEventListener('DOMContentLoaded', () => {
   } else {
     window.addEventListener('resize', onResize);
   }
+
+  // データ確認モーダルの開閉と表示制御
+  function openDataModal() {
+    if (!state.tableData) {
+      showToast('データが読み込まれていません', 'warning');
+      return;
+    }
+    renderDataTable();
+    elements.dataModal.style.display = 'flex';
+    elements.modalSearch.value = '';
+    elements.modalSearch.focus();
+  }
+
+  function closeDataModal() {
+    if (elements.dataModal) {
+      elements.dataModal.style.display = 'none';
+    }
+  }
+
+  // データテーブルのレンダリング (検索フィルタ対応)
+  function renderDataTable(filterText = '') {
+    if (!state.tableData) return;
+    const { columns, rows, numericColumns } = state.tableData;
+    const q = filterText.trim().toLowerCase();
+
+    // フィルタリング
+    const filteredRows = q
+      ? rows.filter(r => columns.some(col => String(r[col] || '').toLowerCase().includes(q)))
+      : rows;
+
+    elements.modalDataCount.textContent = `${filteredRows.length} 件 / 全 ${rows.length} 件`;
+
+    // ヘッダー作成
+    let headHtml = '<tr><th class="row-num-cell">#</th>';
+    columns.forEach(col => {
+      const isNum = numericColumns.includes(col);
+      headHtml += `<th class="${isNum ? 'num-col' : ''}">${col}</th>`;
+    });
+    headHtml += '</tr>';
+    elements.dataTableHead.innerHTML = headHtml;
+
+    // ボディ作成
+    if (filteredRows.length === 0) {
+      elements.dataTableBody.innerHTML = `<tr><td colspan="${columns.length + 1}" style="text-align: center; padding: 24px; color: #94a3b8;">一致するデータが見つかりませんでした</td></tr>`;
+      return;
+    }
+
+    let bodyHtml = '';
+    filteredRows.forEach((r, idx) => {
+      bodyHtml += `<tr><td class="row-num-cell">${idx + 1}</td>`;
+      columns.forEach(col => {
+        const val = r[col];
+        const isNum = numericColumns.includes(col);
+        const displayVal = (typeof val === 'number') ? val.toLocaleString() : (val !== undefined && val !== null ? val : '');
+        bodyHtml += `<td class="${isNum ? 'num-cell' : ''}">${displayVal}</td>`;
+      });
+      bodyHtml += '</tr>';
+    });
+    elements.dataTableBody.innerHTML = bodyHtml;
+  }
+
+  // データ確認メニューボタンのイベント
+  if (elements.btnViewData) elements.btnViewData.addEventListener('click', openDataModal);
+  if (elements.btnViewDataSidebar) elements.btnViewDataSidebar.addEventListener('click', openDataModal);
+  if (elements.fileInfo) {
+    elements.fileInfo.style.cursor = 'pointer';
+    elements.fileInfo.addEventListener('click', openDataModal);
+  }
+  if (elements.btnCloseModal) elements.btnCloseModal.addEventListener('click', closeDataModal);
+
+  // モーダル背景クリックで閉じる
+  if (elements.dataModal) {
+    elements.dataModal.addEventListener('click', (e) => {
+      if (e.target === elements.dataModal) closeDataModal();
+    });
+  }
+
+  // テーブル内リアルタイム検索
+  if (elements.modalSearch) {
+    elements.modalSearch.addEventListener('input', (e) => {
+      renderDataTable(e.target.value);
+    });
+  }
+
+  // 表データをCSV形式でクリップボードにコピー
+  if (elements.btnCopyTableCSV) {
+    elements.btnCopyTableCSV.addEventListener('click', async () => {
+      if (!state.tableData) return;
+      const { columns, rows } = state.tableData;
+      let csv = columns.join(',') + '\n';
+      rows.forEach(r => {
+        const line = columns.map(c => {
+          const val = r[c] !== undefined && r[c] !== null ? String(r[c]) : '';
+          return val.includes(',') ? `"${val}"` : val;
+        }).join(',');
+        csv += line + '\n';
+      });
+      try {
+        await navigator.clipboard.writeText(csv);
+        showToast('テーブルデータをCSV形式でコピーしました', 'success');
+      } catch (err) {
+        showToast('コピーに失敗しました', 'error');
+      }
+    });
+  }
+
+  // Escキーでモーダルも閉じる
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      if (elements.dataModal && elements.dataModal.style.display !== 'none') {
+        closeDataModal();
+      }
+    }
+  });
 
   // 初回起動: サンプルデータを自動読み込み
   loadSampleData();
