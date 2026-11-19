@@ -146,7 +146,7 @@ class ScatterPlot {
   }
 
   onMouseMove(e) {
-    if (!this.isDragging || !this.draggedLabelId || !this.svg) return;
+    if (!this.isDragging || this.draggedLabelId === null || this.draggedLabelId === undefined || !this.svg) return;
     const svgRect = this.svg.getBoundingClientRect();
     const scaleFactorX = svgRect.width > 0 ? (this.currentRenderWidth || this.options.width) / svgRect.width : 1;
     const scaleFactorY = svgRect.height > 0 ? (this.currentRenderHeight || this.options.height) / svgRect.height : 1;
@@ -256,8 +256,9 @@ class ScatterPlot {
 
     const { rows, xKey, yKey, labelKey } = data;
     if (!rows || rows.length === 0 || !xKey || !yKey) {
+      this.svg = null;
       this.container.innerHTML = '<div class="empty-state">データが選択されていません。</div>';
-      return;
+      return null;
     }
 
     // 有効なデータポイントを抽出
@@ -276,8 +277,9 @@ class ScatterPlot {
     });
 
     if (validRows.length === 0) {
+      this.svg = null;
       this.container.innerHTML = '<div class="empty-state">選択された列に有効な数値データがありません。</div>';
-      return;
+      return null;
     }
 
     // 統計計算
@@ -991,7 +993,7 @@ class ScatterPlot {
   // SVGダウンロード (見たままの解像度とベクター品質)
   downloadSVG(fileName = 'scatter_plot.svg') {
     const svgStr = this.getSVGString();
-    if (!svgStr) return;
+    if (!svgStr) return false;
     const blob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -1001,6 +1003,7 @@ class ScatterPlot {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+    return true;
   }
 
   // PNG画像 (Canvas経由) のダウンロード (画面上の見たままの形を高解像度出力)

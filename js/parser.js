@@ -4,26 +4,29 @@
  */
 
 const DataParser = {
-  // 数値文字列の正規化 (全角数字、カンマ、%記号の除去)
+  // 数値文字列の正規化 (全角数字・記号、カンマ、%記号の除去と厳密判定)
   cleanNumber(val) {
     if (val === null || val === undefined) return NaN;
-    if (typeof val === 'number') return isNaN(val) ? NaN : val;
+    if (typeof val === 'number') return Number.isFinite(val) ? val : NaN;
     let str = String(val).trim();
-    if (str === '' || str === '-' || str === 'NA' || str === 'N/A' || str === 'null') return NaN;
-    
-    // 全角英数字を半角に変換
+    if (str === '' || str === '-' || str === '－' || str === '−' || str === '―' || str === 'NA' || str === 'N/A' || str === 'null') return NaN;
+
+    // 全角英数字・記号を半角に変換
     str = str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
-    // カンマ、円マーク、ドルマーク、空白を除去
-    str = str.replace(/[,\s¥$]/g, '');
-    
+    str = str.replace(/[－−]/g, '-').replace(/．/g, '.').replace(/％/g, '%').replace(/＋/g, '+');
+    // カンマ、通貨記号、空白を除去
+    str = str.replace(/[,\s¥￥$]/g, '');
+
     // パーセント記号の処理
     if (str.endsWith('%')) {
-      const num = parseFloat(str.slice(0, -1));
-      return isNaN(num) ? NaN : num; // %値は数値として保持 (12.5% -> 12.5)
+      str = str.slice(0, -1);
     }
 
-    const num = parseFloat(str);
-    return isNaN(num) ? NaN : num;
+    if (str === '' || str === '+' || str === '-') return NaN;
+
+    // parseFloat のような先頭部分一致 ("2025年" -> 2025) を防ぐため Number() で厳密判定
+    const num = Number(str);
+    return Number.isFinite(num) ? num : NaN;
   },
 
   // 文字コード判定とテキストデコード (ArrayBuffer -> string)
@@ -54,11 +57,14 @@ const DataParser = {
       throw new Error("有効なデータ行が見つかりません。");
     }
 
-    // ヘッダー (列名)
+    // ヘッダー (列名・重複列名の自動ユニーク化)
     const headerRow = filteredRows[0];
+    const usedColNames = new Map();
     const columns = headerRow.map((col, idx) => {
-      const name = col !== null && col !== undefined ? String(col).trim() : '';
-      return name || `列_${idx + 1}`;
+      const baseName = (col !== null && col !== undefined ? String(col).trim() : '') || `列_${idx + 1}`;
+      const count = usedColNames.get(baseName) || 0;
+      usedColNames.set(baseName, count + 1);
+      return count === 0 ? baseName : `${baseName} (${count + 1})`;
     });
 
     const dataRows = filteredRows.slice(1);

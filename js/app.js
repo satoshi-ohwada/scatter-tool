@@ -108,6 +108,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 2800);
   }
 
+  // HTMLエスケープヘルパー (特殊文字によるテーブル崩れ・XSS防止)
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   // ScatterPlot インスタンス生成
   state.scatterPlot = new ScatterPlot('chartContainer', {
     width: 960,
@@ -236,6 +246,9 @@ document.addEventListener('DOMContentLoaded', () => {
     state.tableData = parsedTable;
     state.excludedRowIds.clear();
     state.highlightedRowIds.clear();
+    if (state.scatterPlot) {
+      state.scatterPlot.resetPositions();
+    }
 
     // 各行にユニークID _rowId を付与
     parsedTable.rows.forEach((r, idx) => {
@@ -394,6 +407,7 @@ document.addEventListener('DOMContentLoaded', () => {
   elements.fileInput.addEventListener('change', (e) => {
     if (e.target.files && e.target.files.length > 0) {
       handleFiles(e.target.files);
+      e.target.value = '';
     }
   });
 
@@ -509,8 +523,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const handleSaveSVG = () => {
     if (!state.scatterPlot) return;
     const title = elements.chartTitle.value.trim() || 'scatter_plot';
-    state.scatterPlot.downloadSVG(`${title}.svg`);
-    showToast('見たままの形でSVG保存しました (ベクター画像)', 'success');
+    const ok = state.scatterPlot.downloadSVG(`${title}.svg`);
+    if (ok) {
+      showToast('見たままの形でSVG保存しました (ベクター画像)', 'success');
+    } else {
+      showToast('保存できるグラフがありません', 'warning');
+    }
   };
 
   // エクスポート: PNGダウンロード (見たままの形・解像度で保存)
@@ -521,7 +539,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (res) {
       showToast(`見たままの形で高解像度PNG保存しました (${res.width}×${res.height})`, 'success');
     } else {
-      showToast('PNG保存が完了しました', 'success');
+      showToast('保存できるグラフがありません', 'warning');
     }
   };
 
@@ -652,14 +670,29 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('resize', onResize);
   }
 
+  // ヘッダー全選択チェックボックスの状態を同期
+  function syncHeaderCheckbox() {
+    const chkHeader = document.getElementById('chkHeaderSelectAll');
+    if (!chkHeader || !state.tableData) return;
+    const total = state.tableData.rows.length;
+    const excluded = state.excludedRowIds.size;
+    chkHeader.checked = total > 0 && excluded === 0;
+    chkHeader.indeterminate = excluded > 0 && excluded < total;
+  }
+
   // モーダル件数・状態カウント表示の更新
   function updateModalCount(filteredCount = null) {
     if (!state.tableData) return;
     const total = state.tableData.rows.length;
     const active = total - state.excludedRowIds.size;
     const hl = state.highlightedRowIds.size;
-    const filterInfo = (filteredCount !== null && filteredCount !== total) ? ` (一致: ${filteredCount}件)` : '';
+    let countToShow = filteredCount;
+    if (countToShow === null && elements.modalSearch && elements.modalSearch.value.trim() !== '') {
+      countToShow = elements.dataTableBody.querySelectorAll('tr[data-row-id]').length;
+    }
+    const filterInfo = (countToShow !== null && countToShow !== total) ? ` (一致: ${countToShow}件)` : '';
     elements.modalDataCount.textContent = `作図対象: ${active}/${total}件 | 強調: ${hl}件${filterInfo}`;
+    syncHeaderCheckbox();
   }
 
   // データ確認モーダルの開閉と表示制御
@@ -714,7 +747,7 @@ document.addEventListener('DOMContentLoaded', () => {
       else if (col === currentY) roleTag = '<span class="col-role-tag role-y">Y軸</span>';
       else if (col === currentLabel) roleTag = '<span class="col-role-tag role-label">名称</span>';
 
-      headHtml += `<th class="${isNum ? 'num-col' : ''}">${col}${roleTag}</th>`;
+      headHtml += `<th class="${isNum ? 'num-col' : ''}">${escapeHtml(col)}${roleTag}</th>`;
     });
     headHtml += '</tr>';
     elements.dataTableHead.innerHTML = headHtml;
@@ -755,12 +788,18 @@ document.addEventListener('DOMContentLoaded', () => {
       columns.forEach(col => {
         const val = r[col];
         const isNum = numericColumns.includes(col);
-        const displayVal = (typeof val === 'number') ? val.toLocaleString() : (val !== undefined && val !== null ? val : '');
+        let displayVal = '';
+        if (typeof val === 'number') {
+          displayVal = Number.isFinite(val) ? val.toLocaleString() : '-';
+        } else if (val !== undefined && val !== null) {
+          displayVal = escapeHtml(val);
+        }
         bodyHtml += `<td class="${isNum ? 'num-cell' : ''}">${displayVal}</td>`;
       });
       bodyHtml += '</tr>';
     });
     elements.dataTableBody.innerHTML = bodyHtml;
+    syncHeaderCheckbox();
   }
 
   // テーブル内チェックボックスイベント (委譲ハンドラ)
@@ -782,7 +821,7 @@ document.addEventListener('DOMContentLoaded', () => {
           state.excludedRowIds.add(rowId);
           if (tr) tr.classList.add('row-excluded');
         }
-        updateModalCount(elements.modalSearch ? elements.modalSearch.value.trim().length > 0 ? null : undefined : undefined);
+        updateModalCount();
         redrawChart();
       } else if (target.classList.contains('chk-row-highlight')) {
         if (target.checked) {
@@ -811,6 +850,7 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.modalSelectX.addEventListener('change', () => {
       elements.selectX.value = elements.modalSelectX.value;
       elements.xTitle.value = elements.modalSelectX.value;
+      elements.chartTitle.value = `${elements.selectY.value} vs ${elements.selectX.value}`;
       redrawChart();
       renderDataTable(elements.modalSearch ? elements.modalSearch.value : '');
     });
@@ -820,6 +860,7 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.modalSelectY.addEventListener('change', () => {
       elements.selectY.value = elements.modalSelectY.value;
       elements.yTitle.value = elements.modalSelectY.value;
+      elements.chartTitle.value = `${elements.selectY.value} vs ${elements.selectX.value}`;
       redrawChart();
       renderDataTable(elements.modalSearch ? elements.modalSearch.value : '');
     });
@@ -893,12 +934,14 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.btnCopyTableCSV.addEventListener('click', async () => {
       if (!state.tableData) return;
       const { columns, rows } = state.tableData;
-      let csv = columns.join(',') + '\n';
+      const escapeCsvCell = (v) => {
+        if (v === undefined || v === null || (typeof v === 'number' && !Number.isFinite(v))) return '';
+        const s = String(v);
+        return (s.includes(',') || s.includes('"') || s.includes('\n')) ? `"${s.replace(/"/g, '""')}"` : s;
+      };
+      let csv = columns.map(escapeCsvCell).join(',') + '\n';
       rows.forEach(r => {
-        const line = columns.map(c => {
-          const val = r[c] !== undefined && r[c] !== null ? String(r[c]) : '';
-          return val.includes(',') ? `"${val}"` : val;
-        }).join(',');
+        const line = columns.map(c => escapeCsvCell(r[c])).join(',');
         csv += line + '\n';
       });
       try {
