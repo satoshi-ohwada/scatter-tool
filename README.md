@@ -121,7 +121,7 @@ scatter-tool/
 │   ├── papaparse.min.js# 高速CSVパーサー
 │   └── xlsx.full.min.js# Excel (.xlsx/.xls) パーサー
 ├── data/
-│   ├── sample_census2025.csv # サンプルデータ (総務省 令和7年国勢調査 表Ⅰ-2-1 都道府県別人口・増減率・密度)
+│   ├── sample_census2025.csv # サンプルデータ (総務省 令和7年国勢調査 表Ⅰ-2-1 都道府県別人口[2015/2020/2025年]・人口増減・密度)
 │   └── sample_retail.csv     # サンプルデータ (店舗別分析)
 ├── serve.py            # ローカルHTTPサーバー (Python標準ライブラリのみ使用)
 ├── serve.sh            # 起動シェルスクリプト
