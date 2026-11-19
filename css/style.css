@@ -282,7 +282,7 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 5px;
   padding: 6px 12px;
   font-size: 12px;
   font-weight: 600;
@@ -292,6 +292,8 @@ body {
   color: #334155;
   cursor: pointer;
   transition: all 0.15s ease;
+  white-space: nowrap; /* ボタン内テキストの2段折り返しを禁止 */
+  flex-shrink: 0;       /* ボタンの不自然な縮小を防止 */
 }
 
 .btn:hover {
@@ -313,6 +315,7 @@ body {
 .btn-sm {
   padding: 4px 8px;
   font-size: 11px;
+  white-space: nowrap;
 }
 
 .btn-block {
@@ -360,29 +363,51 @@ body {
 }
 
 .chart-toolbar {
-  height: 34px;
+  height: 36px;
   border-bottom: 1px solid var(--border-color);
-  padding: 0 12px;
+  padding: 0 10px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   background-color: #ffffff;
   flex-shrink: 0;
+  gap: 8px;
+  overflow-x: auto;
 }
 
 .chart-toolbar-title {
-  font-size: 11px;
-  font-weight: 600;
-  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  color: #475569;
   display: flex;
   align-items: center;
   gap: 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  cursor: default;
+}
+
+.toolbar-hint {
+  font-size: 11px;
+  color: #94a3b8;
+  cursor: help;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 1px solid #cbd5e1;
+  background-color: #f8fafc;
+  line-height: 1;
 }
 
 .chart-toolbar-actions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .toolbar-divider {
