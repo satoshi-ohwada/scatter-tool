@@ -1030,6 +1030,14 @@ class ScatterPlot {
       img.src = url;
     });
   }
+
+  // 手動移動したラベルや回帰式バッジの位置を初期状態にリセット
+  resetPositions() {
+    if (this.layoutEngine) {
+      this.layoutEngine.resetManualPositions();
+    }
+    this.regBadgePos = null;
+  }
 }
 
 window.ScatterPlot = ScatterPlot;

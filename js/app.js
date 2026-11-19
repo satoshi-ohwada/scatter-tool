@@ -62,6 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
     chartContainer: document.getElementById('chartContainer'),
     chartCard: document.querySelector('.chart-card'),
     sidebar: document.querySelector('.sidebar'),
+    btnResetView: document.getElementById('btnResetView'),
     btnToggleSidebar: document.getElementById('btnToggleSidebar'),
     btnMaximizeChart: document.getElementById('btnMaximizeChart'),
 
@@ -402,14 +403,41 @@ document.addEventListener('DOMContentLoaded', () => {
     redrawChart();
   });
 
-  // ラベル位置手動移動のリセット
-  elements.btnResetLabels.addEventListener('click', () => {
-    if (state.scatterPlot) {
-      state.scatterPlot.layoutEngine.resetManualPositions();
-      redrawChart();
-      showToast('ラベル位置の調整をリセットしました', 'info');
+  // ラベル位置・回帰式バッジ・サイズ・表示状態を初期状態に戻す
+  function resetPositionsAndSizes() {
+    if (!state.scatterPlot) return;
+
+    // 1. ラベルおよび回帰式バッジの手動移動をリセット
+    state.scatterPlot.resetPositions();
+
+    // 2. スタイル・サイズ設定を初期標準値に復元
+    elements.rangePointSize.value = 6;
+    elements.valPointSize.textContent = '6px';
+    elements.rangeOpacity.value = 0.75;
+    elements.valOpacity.textContent = '75%';
+    elements.rangeFontSize.value = 11;
+    elements.valFontSize.textContent = '11px';
+
+    // 3. 全画面表示中なら通常表示に戻す
+    if (elements.chartCard && elements.chartCard.classList.contains('maximized')) {
+      elements.chartCard.classList.remove('maximized');
+      if (elements.btnMaximizeChart) {
+        elements.btnMaximizeChart.textContent = '⛶ 全画面表示';
+        elements.btnMaximizeChart.title = '散布図を全画面に最大化表示します (Escキーで元に戻す)';
+      }
     }
-  });
+
+    // 4. 再描画実行
+    redrawChart();
+    showToast('位置とサイズを初期状態に戻しました', 'success');
+  }
+
+  if (elements.btnResetView) {
+    elements.btnResetView.addEventListener('click', resetPositionsAndSizes);
+  }
+  if (elements.btnResetLabels) {
+    elements.btnResetLabels.addEventListener('click', resetPositionsAndSizes);
+  }
 
   // エクスポート: SVGダウンロード
   elements.btnSaveSVG.addEventListener('click', () => {
