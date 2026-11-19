@@ -59,6 +59,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 描画エリア
     chartContainer: document.getElementById('chartContainer'),
+    chartCard: document.querySelector('.chart-card'),
+    sidebar: document.querySelector('.sidebar'),
+    btnToggleSidebar: document.getElementById('btnToggleSidebar'),
+    btnMaximizeChart: document.getElementById('btnMaximizeChart'),
 
     // エクスポート
     btnSaveSVG: document.getElementById('btnSaveSVG'),
@@ -440,6 +444,63 @@ document.addEventListener('DOMContentLoaded', () => {
       showToast(`コピーに失敗しました: ${err.message}`, 'error');
     }
   });
+
+  // サイドバーの開閉 (折りたたみによるグラフ拡大)
+  if (elements.btnToggleSidebar && elements.sidebar) {
+    elements.btnToggleSidebar.addEventListener('click', () => {
+      const isCollapsed = elements.sidebar.classList.toggle('collapsed');
+      elements.btnToggleSidebar.textContent = isCollapsed ? '▶ パネルを開く' : '◀ パネルを隠す';
+      elements.btnToggleSidebar.title = isCollapsed
+        ? '設定パネルを表示します'
+        : '設定パネルを折りたたんで散布図を横いっぱいに拡大表示します';
+      setTimeout(() => {
+        redrawChart();
+      }, 240);
+    });
+  }
+
+  // 散布図の全画面最大化表示
+  if (elements.btnMaximizeChart && elements.chartCard) {
+    elements.btnMaximizeChart.addEventListener('click', () => {
+      const isMaximized = elements.chartCard.classList.toggle('maximized');
+      elements.btnMaximizeChart.textContent = isMaximized ? '🗗 元に戻す' : '⛶ 全画面表示';
+      elements.btnMaximizeChart.title = isMaximized
+        ? '元の表示サイズに戻します (Escキーでも解除可能)'
+        : '散布図を全画面に最大化表示します (Escキーで元に戻す)';
+      setTimeout(() => {
+        redrawChart();
+      }, 240);
+    });
+
+    // Escキーで全画面解除
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && elements.chartCard.classList.contains('maximized')) {
+        elements.chartCard.classList.remove('maximized');
+        elements.btnMaximizeChart.textContent = '⛶ 全画面表示';
+        setTimeout(() => {
+          redrawChart();
+        }, 240);
+      }
+    });
+  }
+
+  // コンテナのサイズ変化・リサイズ監視 (自動的に大きくフィット)
+  let resizeTimer = null;
+  const onResize = () => {
+    if (resizeTimer) clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      redrawChart();
+    }, 120);
+  };
+
+  if (window.ResizeObserver && elements.chartContainer) {
+    const ro = new ResizeObserver(() => {
+      onResize();
+    });
+    ro.observe(elements.chartContainer);
+  } else {
+    window.addEventListener('resize', onResize);
+  }
 
   // 初回起動: サンプルデータを自動読み込み
   loadSampleData();

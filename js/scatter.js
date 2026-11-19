@@ -11,9 +11,9 @@ class ScatterPlot {
     }
 
     this.options = {
-      width: 900,
-      height: 650,
-      margin: { top: 50, right: 60, bottom: 65, left: 75 },
+      width: 960,
+      height: 640,
+      margin: { top: 40, right: 32, bottom: 48, left: 58 },
       theme: 'modernNavy',
       pointRadius: 6,
       pointOpacity: 0.75,
@@ -144,8 +144,12 @@ class ScatterPlot {
 
   onMouseMove(e) {
     if (!this.isDragging || !this.draggedLabelId || !this.svg) return;
-    const dx = e.clientX - this.dragStart.x;
-    const dy = e.clientY - this.dragStart.y;
+    const svgRect = this.svg.getBoundingClientRect();
+    const scaleFactorX = svgRect.width > 0 ? (this.currentRenderWidth || this.options.width) / svgRect.width : 1;
+    const scaleFactorY = svgRect.height > 0 ? (this.currentRenderHeight || this.options.height) / svgRect.height : 1;
+
+    const dx = (e.clientX - this.dragStart.x) * scaleFactorX;
+    const dy = (e.clientY - this.dragStart.y) * scaleFactorY;
     this.dragStart = { x: e.clientX, y: e.clientY };
 
     const label = this.layoutEngine.labels.find(l => l.id === this.draggedLabelId);
@@ -273,10 +277,30 @@ class ScatterPlot {
     const sortedY = [...validRows].sort((a, b) => b._y - a._y);
     sortedY.forEach((r, rank) => { r._rankY = rank + 1; });
 
-    // スケール計算 (マージンとプロットエリア)
-    const { width, height, margin } = this.options;
-    const plotW = width - margin.left - margin.right;
-    const plotH = height - margin.top - margin.bottom;
+    // コンテナの実描画領域に合わせてレスポンシブにサイズを決定 (画面全体を大きく活用)
+    let width = this.options.width;
+    let height = this.options.height;
+    if (this.container) {
+      const rect = this.container.getBoundingClientRect();
+      if (rect.width > 200 && rect.height > 200) {
+        width = Math.round(rect.width);
+        height = Math.round(rect.height);
+      }
+    }
+    this.currentRenderWidth = width;
+    this.currentRenderHeight = height;
+
+    // タイトルの有無に応じて上部余白を最適化 (無駄な余白を削減してグラフを最大化)
+    const hasTitle = Boolean(this.options.title && this.options.title.trim());
+    const margin = {
+      top: hasTitle ? 42 : 26,
+      right: 30,
+      bottom: 46,
+      left: 56
+    };
+
+    const plotW = Math.max(100, width - margin.left - margin.right);
+    const plotH = Math.max(100, height - margin.top - margin.bottom);
 
     let xMin = Math.min(...xValues);
     let xMax = Math.max(...xValues);
@@ -853,8 +877,10 @@ class ScatterPlot {
     const svgStr = this.getSVGString();
     if (!svgStr) return;
 
-    const width = this.options.width * scale;
-    const height = this.options.height * scale;
+    const baseW = this.currentRenderWidth || this.options.width;
+    const baseH = this.currentRenderHeight || this.options.height;
+    const width = baseW * scale;
+    const height = baseH * scale;
 
     const canvas = document.createElement('canvas');
     canvas.width = width;
@@ -889,8 +915,10 @@ class ScatterPlot {
     const svgStr = this.getSVGString();
     if (!svgStr) throw new Error("グラフが作成されていません。");
 
-    const width = this.options.width * scale;
-    const height = this.options.height * scale;
+    const baseW = this.currentRenderWidth || this.options.width;
+    const baseH = this.currentRenderHeight || this.options.height;
+    const width = baseW * scale;
+    const height = baseH * scale;
 
     const canvas = document.createElement('canvas');
     canvas.width = width;
