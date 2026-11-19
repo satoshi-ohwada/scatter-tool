@@ -41,7 +41,7 @@ class LabelLayoutEngine {
         w += name.charCodeAt(i) > 255 ? fontSize * 1.05 : fontSize * 0.65;
       }
       w += 10; // 左右パディング
-      const h = fontSize + 8; // 上下に十分な余白を確保し、囲み中央に美しく配置
+      const h = fontSize + 9; // 上下に均等な余白を確保し、整数ピクセルで囲み中央に完全配置
 
       // 表示判定
       let visible = true;

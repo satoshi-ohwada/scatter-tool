@@ -831,17 +831,16 @@ class ScatterPlot {
       }
       g.appendChild(rect);
 
-      // テキスト (囲み枠の中央に完全配置)
+      // テキスト (SVGラスタライズ・Canvas保存・PNG出力時にも完全な垂直中央配置を保証する dy=0.35em 方式)
       const txt = document.createElementNS(svgNS, "text");
       txt.setAttribute("x", "0");
-      txt.setAttribute("y", "0.5"); // 和文フォントメトリクスの視覚的垂直中央補正
+      txt.setAttribute("y", "0");
+      txt.setAttribute("dy", "0.32em");
       txt.setAttribute("text-anchor", "middle");
-      txt.setAttribute("dominant-baseline", "central");
-      txt.setAttribute("alignment-baseline", "central");
       txt.setAttribute("fill", isHl ? "#c2410c" : theme.labelText);
       txt.setAttribute("font-size", this.options.fontSize);
       txt.setAttribute("font-weight", (isHl || label.userMoved) ? "bold" : "normal");
-      txt.setAttribute("font-family", "system-ui, -apple-system, sans-serif");
+      txt.setAttribute("font-family", "system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans JP', 'Hiragino Sans', 'Meiryo', sans-serif");
       txt.textContent = label.name;
       g.appendChild(txt);
 
