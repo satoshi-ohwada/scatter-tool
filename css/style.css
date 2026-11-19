@@ -38,13 +38,13 @@ body {
 
 /* ヘッダー */
 .app-header {
-  height: 56px;
+  height: 46px;
   background-color: var(--bg-card);
   border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 20px;
+  padding: 0 16px;
   flex-shrink: 0;
   z-index: 10;
 }
@@ -52,15 +52,15 @@ body {
 .brand {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .brand-icon {
-  font-size: 22px;
+  font-size: 18px;
 }
 
 .brand-title {
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 700;
   color: #1e293b;
 }
@@ -333,8 +333,8 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 10px 14px;
-  gap: 8px;
+  padding: 8px 12px;
+  gap: 6px;
   overflow: hidden;
   background-color: #f8fafc;
 }
@@ -350,6 +350,7 @@ body {
   overflow: hidden;
   position: relative;
   transition: all 0.2s ease;
+  min-height: 0; /* flexアイテムの縮小を許可 */
 }
 
 /* 全画面最大化表示 */
@@ -368,9 +369,9 @@ body {
 }
 
 .chart-toolbar {
-  height: 40px;
+  height: 34px;
   border-bottom: 1px solid var(--border-color);
-  padding: 0 14px;
+  padding: 0 12px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -379,7 +380,7 @@ body {
 }
 
 .chart-toolbar-title {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   color: #64748b;
   display: flex;
@@ -390,7 +391,7 @@ body {
 .chart-toolbar-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .chart-wrapper {
@@ -399,7 +400,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 4px;
+  padding: 6px;
   overflow: hidden;
   width: 100%;
   height: 100%;
@@ -411,51 +412,62 @@ body {
   text-align: center;
 }
 
-/* サマリーバー (フッターカード) */
+/* サマリーバー (フッターカード - 小さめノートPC対応スリムスタイル) */
 .summary-card {
   background-color: #ffffff;
   border: 1px solid var(--border-color);
   border-radius: var(--radius);
-  padding: 8px 14px;
+  padding: 6px 12px;
   box-shadow: var(--shadow-sm);
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
   flex-shrink: 0;
+  min-height: 36px;
 }
 
 .summary-content {
   flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .summary-grid {
   display: flex;
-  gap: 20px;
+  gap: 12px;
+  align-items: baseline;
   flex-wrap: wrap;
 }
 
 .summary-item {
-  display: flex;
-  flex-direction: column;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
 }
 
 .summary-label {
   font-size: 10px;
   color: var(--text-muted);
   font-weight: 600;
-  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .summary-val {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--text-main);
+  white-space: nowrap;
 }
 
 .quadrant-counts {
   display: flex;
-  gap: 8px;
-  margin-top: 6px;
+  gap: 6px;
+  margin-top: 0;
+  align-items: center;
 }
 
 .q-badge {

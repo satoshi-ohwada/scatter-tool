@@ -277,26 +277,39 @@ class ScatterPlot {
     const sortedY = [...validRows].sort((a, b) => b._y - a._y);
     sortedY.forEach((r, rank) => { r._rankY = rank + 1; });
 
-    // コンテナの実描画領域に合わせてレスポンシブにサイズを決定 (画面全体を大きく活用)
-    let width = this.options.width;
-    let height = this.options.height;
+    // 一般的な散布図の縦横比 (通常時は自然で美しい 4:3 = 1.333、1:1比率固定時は 1.0)
+    const targetAspect = this.options.lockAspect1to1 ? 1.0 : 1.333;
+    let renderW = 800;
+    let renderH = 600;
+
     if (this.container) {
       const rect = this.container.getBoundingClientRect();
-      if (rect.width > 200 && rect.height > 200) {
-        width = Math.round(rect.width);
-        height = Math.round(rect.height);
+      const contW = rect.width > 100 ? rect.width : 800;
+      const contH = rect.height > 100 ? rect.height : 600;
+
+      if (contW / contH > targetAspect) {
+        // コンテナが横長の場合: コンテナの高さに合わせて幅を4:3に制限 (縦潰れ防止)
+        renderH = Math.max(280, Math.floor(contH));
+        renderW = Math.round(renderH * targetAspect);
+      } else {
+        // コンテナが縦長の場合: コンテナの幅に合わせて高さを4:3に設定
+        renderW = Math.max(380, Math.floor(contW));
+        renderH = Math.round(renderW / targetAspect);
       }
     }
+
+    const width = renderW;
+    const height = renderH;
     this.currentRenderWidth = width;
     this.currentRenderHeight = height;
 
     // タイトルの有無に応じて上部余白を最適化 (無駄な余白を削減してグラフを最大化)
     const hasTitle = Boolean(this.options.title && this.options.title.trim());
     const margin = {
-      top: hasTitle ? 42 : 26,
-      right: 30,
-      bottom: 46,
-      left: 56
+      top: hasTitle ? 38 : 22,
+      right: 28,
+      bottom: 42,
+      left: 52
     };
 
     const plotW = Math.max(100, width - margin.left - margin.right);
@@ -335,8 +348,13 @@ class ScatterPlot {
     const svg = document.createElementNS(svgNS, "svg");
     svg.setAttribute("xmlns", svgNS);
     svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
-    svg.setAttribute("width", "100%");
-    svg.setAttribute("height", "100%");
+    svg.style.maxWidth = "100%";
+    svg.style.maxHeight = "100%";
+    svg.style.width = "auto";
+    svg.style.height = "auto";
+    svg.style.display = "block";
+    svg.style.boxShadow = "0 1px 3px rgba(0,0,0,0.06)";
+    svg.style.borderRadius = "4px";
     svg.style.fontFamily = "system-ui, -apple-system, sans-serif";
     svg.style.userSelect = "none";
     this.svg = svg;

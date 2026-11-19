@@ -153,28 +153,28 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.summaryContent.innerHTML = `
       <div class="summary-grid">
         <div class="summary-item">
-          <div class="summary-label">サンプル数</div>
-          <div class="summary-val">${stats.totalCount} 件</div>
+          <span class="summary-label">サンプル数:</span>
+          <span class="summary-val">${stats.totalCount}件</span>
         </div>
         <div class="summary-item">
-          <div class="summary-label">${splitName} X [${xKey}]</div>
-          <div class="summary-val">${stats.splitX.toFixed(2)}</div>
+          <span class="summary-label">${splitName}X:</span>
+          <span class="summary-val">${stats.splitX.toFixed(1)}</span>
         </div>
         <div class="summary-item">
-          <div class="summary-label">${splitName} Y [${yKey}]</div>
-          <div class="summary-val">${stats.splitY.toFixed(2)}</div>
+          <span class="summary-label">${splitName}Y:</span>
+          <span class="summary-val">${stats.splitY.toFixed(1)}</span>
         </div>
         <div class="summary-item">
-          <div class="summary-label">相関係数 (r)</div>
-          <div class="summary-val ${Math.abs(reg.r) > 0.6 ? 'text-primary' : ''}">${reg.r.toFixed(3)}</div>
+          <span class="summary-label">相関 (r):</span>
+          <span class="summary-val ${Math.abs(reg.r) > 0.6 ? 'text-primary' : ''}">${reg.r.toFixed(3)}</span>
         </div>
         <div class="summary-item">
-          <div class="summary-label">決定係数 (R²)</div>
-          <div class="summary-val font-bold">${reg.r2.toFixed(3)}</div>
+          <span class="summary-label">決定係数 (R²):</span>
+          <span class="summary-val font-bold">${reg.r2.toFixed(3)}</span>
         </div>
         <div class="summary-item">
-          <div class="summary-label">1次回帰式</div>
-          <div class="summary-val text-mono">y = ${reg.slope.toFixed(3)}x ${sign} ${Math.abs(reg.intercept).toFixed(2)}</div>
+          <span class="summary-label">回帰式:</span>
+          <span class="summary-val text-mono">y = ${reg.slope.toFixed(2)}x ${sign} ${Math.abs(reg.intercept).toFixed(2)}</span>
         </div>
       </div>
       <div class="quadrant-counts">
