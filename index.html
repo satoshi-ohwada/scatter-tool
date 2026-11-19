@@ -278,18 +278,43 @@
 
   </div>
 
-  <!-- データ確認モーダル -->
+  <!-- データ確認・対象設定モーダル -->
   <div id="dataModal" class="modal-overlay" style="display: none;">
     <div class="modal-card">
       <div class="modal-header">
         <div class="modal-title">
-          <span>📄 入力データ確認</span>
+          <span>📄 データ確認・作図対象設定</span>
           <span id="modalDataCount" class="modal-badge">0 件</span>
         </div>
         <div class="modal-header-actions">
           <input type="text" id="modalSearch" class="form-input modal-search-input" placeholder="🔍 データを検索...">
           <button id="btnCopyTableCSV" class="btn btn-sm" title="表データをCSV形式でクリップボードにコピー">📋 CSVコピー</button>
           <button id="btnCloseModal" class="btn btn-sm btn-close" title="閉じる (Esc)">✕</button>
+        </div>
+      </div>
+      <!-- モーダル内作図列＆行コントロールバー -->
+      <div class="modal-controls-bar">
+        <div class="modal-col-selectors">
+          <span class="control-label">作図対象列:</span>
+          <label class="modal-select-item" title="プロット点のラベル名称として使用する列">
+            <span class="pill-badge pill-label">🏷️ 名称</span>
+            <select id="modalSelectLabel" class="form-select modal-select"></select>
+          </label>
+          <label class="modal-select-item" title="横軸 (X) に使用する数値列">
+            <span class="pill-badge pill-x">↔️ X軸</span>
+            <select id="modalSelectX" class="form-select modal-select"></select>
+          </label>
+          <label class="modal-select-item" title="縦軸 (Y) に使用する数値列">
+            <span class="pill-badge pill-y">↕️ Y軸</span>
+            <select id="modalSelectY" class="form-select modal-select"></select>
+          </label>
+        </div>
+        <div class="modal-row-actions">
+          <span class="row-action-label">行選択:</span>
+          <button id="btnModalSelectAll" class="btn btn-xs" title="すべての行を作図対象にします">☑ 全作図</button>
+          <button id="btnModalDeselectAll" class="btn btn-xs" title="すべての行を作図対象から除外します">☐ 全解除</button>
+          <span class="action-divider"></span>
+          <button id="btnModalClearHighlight" class="btn btn-xs" title="すべての強調（ハイライト）を解除します">★ 強調クリア</button>
         </div>
       </div>
       <div class="modal-body">

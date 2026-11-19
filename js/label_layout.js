@@ -54,6 +54,10 @@ class LabelLayoutEngine {
       } else if (mode === 'top10') {
         visible = p.rankX <= 10 || p.rankY <= 10;
       }
+      // 強調指定された行はどの表示モードであっても常にラベルを表示
+      if (p.isHighlighted) {
+        visible = true;
+      }
 
       // 前回のユーザー手動位置があればプロット点からの相対位置で復元
       const prevPos = prevMovedMap.get(p.id);
@@ -80,7 +84,8 @@ class LabelLayoutEngine {
         width: w,
         height: h,
         userMoved,
-        visible
+        visible,
+        isHighlighted: !!p.isHighlighted
       };
     });
 

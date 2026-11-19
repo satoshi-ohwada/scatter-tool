@@ -8,7 +8,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const state = {
     tableData: null,
     scatterPlot: null,
-    currentStats: null
+    currentStats: null,
+    excludedRowIds: new Set(),    // 作図から除外する行ID
+    highlightedRowIds: new Set()  // 図上で強調する行ID
   };
 
   // DOM要素の参照取得
@@ -72,7 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
     btnCopyPNG: document.getElementById('btnCopyPNG'),
     btnCopySummary: document.getElementById('btnCopySummary'),
 
-    // データ確認モーダル
+    // データ確認・設定モーダル
     btnViewData: document.getElementById('btnViewData'),
     btnViewDataSidebar: document.getElementById('btnViewDataSidebar'),
     dataModal: document.getElementById('dataModal'),
@@ -82,6 +84,12 @@ document.addEventListener('DOMContentLoaded', () => {
     btnCopyTableCSV: document.getElementById('btnCopyTableCSV'),
     dataTableHead: document.getElementById('dataTableHead'),
     dataTableBody: document.getElementById('dataTableBody'),
+    modalSelectLabel: document.getElementById('modalSelectLabel'),
+    modalSelectX: document.getElementById('modalSelectX'),
+    modalSelectY: document.getElementById('modalSelectY'),
+    btnModalSelectAll: document.getElementById('btnModalSelectAll'),
+    btnModalDeselectAll: document.getElementById('btnModalDeselectAll'),
+    btnModalClearHighlight: document.getElementById('btnModalClearHighlight'),
 
     // サマリーホバーウィジェット
     summaryHoverWidget: document.getElementById('summaryHoverWidget'),
@@ -135,7 +143,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
   }
 
-  // グラフ再描画
+  // グラフ再描画 (作図対象フィルタ・強調フラグ反映)
   function redrawChart() {
     if (!state.tableData) return;
 
@@ -146,8 +154,17 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!xKey || !yKey) return;
 
     const options = getPlotOptions();
+
+    // 作図対象として選択されている行のみを抽出・強調フラグを付与
+    const activeRows = state.tableData.rows
+      .filter(r => !state.excludedRowIds.has(r._rowId))
+      .map(r => ({
+        ...r,
+        _highlighted: state.highlightedRowIds.has(r._rowId)
+      }));
+
     state.currentStats = state.scatterPlot.render({
-      rows: state.tableData.rows,
+      rows: activeRows,
       labelKey,
       xKey,
       yKey
@@ -217,6 +234,13 @@ document.addEventListener('DOMContentLoaded', () => {
   // テーブルデータ読み込み後の列セレクター初期化
   function applyTableData(parsedTable, fileName = '') {
     state.tableData = parsedTable;
+    state.excludedRowIds.clear();
+    state.highlightedRowIds.clear();
+
+    // 各行にユニークID _rowId を付与
+    parsedTable.rows.forEach((r, idx) => {
+      r._rowId = idx;
+    });
 
     // ファイル情報バッジ表示
     elements.fileInfo.textContent = `${fileName ? fileName + ' : ' : ''}${parsedTable.totalCount} 行 / ${parsedTable.columns.length} 列 (クリックで確認)`;
@@ -256,8 +280,36 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.yTitle.value = parsedTable.defaultY;
     elements.chartTitle.value = `${parsedTable.defaultY} vs ${parsedTable.defaultX}`;
 
+    // モーダル内の列セレクタも同期
+    syncModalColumnSelectors();
+
     showToast(`データを読み込みました (${parsedTable.totalCount}件)`, 'success');
     redrawChart();
+  }
+
+  // モーダル内の列セレクタの選択肢と値をサイドバーと同期
+  function syncModalColumnSelectors() {
+    if (!state.tableData || !elements.modalSelectLabel) return;
+    const { columns, numericColumns } = state.tableData;
+
+    elements.modalSelectLabel.innerHTML = '';
+    elements.modalSelectX.innerHTML = '';
+    elements.modalSelectY.innerHTML = '';
+
+    columns.forEach(col => {
+      elements.modalSelectLabel.add(new Option(col, col));
+    });
+
+    columns.forEach(col => {
+      const isNum = numericColumns.includes(col);
+      const labelText = isNum ? `${col} (数値)` : col;
+      elements.modalSelectX.add(new Option(labelText, col));
+      elements.modalSelectY.add(new Option(labelText, col));
+    });
+
+    elements.modalSelectLabel.value = elements.selectLabel.value;
+    elements.modalSelectX.value = elements.selectX.value;
+    elements.modalSelectY.value = elements.selectY.value;
   }
 
   // サンプルデータの読み込み (総務省 令和7年国勢調査 表Ⅰ-2-1)
@@ -600,16 +652,28 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('resize', onResize);
   }
 
+  // モーダル件数・状態カウント表示の更新
+  function updateModalCount(filteredCount = null) {
+    if (!state.tableData) return;
+    const total = state.tableData.rows.length;
+    const active = total - state.excludedRowIds.size;
+    const hl = state.highlightedRowIds.size;
+    const filterInfo = (filteredCount !== null && filteredCount !== total) ? ` (一致: ${filteredCount}件)` : '';
+    elements.modalDataCount.textContent = `作図対象: ${active}/${total}件 | 強調: ${hl}件${filterInfo}`;
+  }
+
   // データ確認モーダルの開閉と表示制御
   function openDataModal() {
     if (!state.tableData) {
       showToast('データが読み込まれていません', 'warning');
       return;
     }
-    renderDataTable();
+    syncModalColumnSelectors();
+    renderDataTable(elements.modalSearch ? elements.modalSearch.value : '');
     elements.dataModal.style.display = 'flex';
-    elements.modalSearch.value = '';
-    elements.modalSearch.focus();
+    if (elements.modalSearch) {
+      elements.modalSearch.focus();
+    }
   }
 
   function closeDataModal() {
@@ -618,7 +682,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // データテーブルのレンダリング (検索フィルタ対応)
+  // データテーブルのレンダリング (検索フィルタ・作図対象・強調対応)
   function renderDataTable(filterText = '') {
     if (!state.tableData) return;
     const { columns, rows, numericColumns } = state.tableData;
@@ -629,26 +693,65 @@ document.addEventListener('DOMContentLoaded', () => {
       ? rows.filter(r => columns.some(col => String(r[col] || '').toLowerCase().includes(q)))
       : rows;
 
-    elements.modalDataCount.textContent = `${filteredRows.length} 件 / 全 ${rows.length} 件`;
+    updateModalCount(filteredRows.length);
 
-    // ヘッダー作成
-    let headHtml = '<tr><th class="row-num-cell">#</th>';
+    const currentLabel = elements.selectLabel.value;
+    const currentX = elements.selectX.value;
+    const currentY = elements.selectY.value;
+
+    const allActive = rows.length > 0 && state.excludedRowIds.size === 0;
+
+    // ヘッダー作成 (作図チェック、強調チェック、行番号、各列)
+    let headHtml = '<tr>';
+    headHtml += `<th class="chk-col-header" title="すべて作図対象にする / 除外する"><input type="checkbox" id="chkHeaderSelectAll" ${allActive ? 'checked' : ''} style="cursor: pointer; width: 15px; height: 15px;"></th>`;
+    headHtml += `<th class="chk-col-header" title="図上で強調表示 (ハイライト)">★</th>`;
+    headHtml += '<th class="row-num-cell">#</th>';
+
     columns.forEach(col => {
       const isNum = numericColumns.includes(col);
-      headHtml += `<th class="${isNum ? 'num-col' : ''}">${col}</th>`;
+      let roleTag = '';
+      if (col === currentX) roleTag = '<span class="col-role-tag role-x">X軸</span>';
+      else if (col === currentY) roleTag = '<span class="col-role-tag role-y">Y軸</span>';
+      else if (col === currentLabel) roleTag = '<span class="col-role-tag role-label">名称</span>';
+
+      headHtml += `<th class="${isNum ? 'num-col' : ''}">${col}${roleTag}</th>`;
     });
     headHtml += '</tr>';
     elements.dataTableHead.innerHTML = headHtml;
 
+    // ヘッダー全選択チェックボックスのイベント登録
+    const chkHeader = document.getElementById('chkHeaderSelectAll');
+    if (chkHeader) {
+      chkHeader.addEventListener('change', (e) => {
+        if (e.target.checked) {
+          state.excludedRowIds.clear();
+        } else {
+          rows.forEach(r => state.excludedRowIds.add(r._rowId));
+        }
+        renderDataTable(elements.modalSearch ? elements.modalSearch.value : '');
+        redrawChart();
+      });
+    }
+
     // ボディ作成
     if (filteredRows.length === 0) {
-      elements.dataTableBody.innerHTML = `<tr><td colspan="${columns.length + 1}" style="text-align: center; padding: 24px; color: #94a3b8;">一致するデータが見つかりませんでした</td></tr>`;
+      elements.dataTableBody.innerHTML = `<tr><td colspan="${columns.length + 3}" style="text-align: center; padding: 24px; color: #94a3b8;">一致するデータが見つかりませんでした</td></tr>`;
       return;
     }
 
     let bodyHtml = '';
-    filteredRows.forEach((r, idx) => {
-      bodyHtml += `<tr><td class="row-num-cell">${idx + 1}</td>`;
+    filteredRows.forEach(r => {
+      const isPlot = !state.excludedRowIds.has(r._rowId);
+      const isHl = state.highlightedRowIds.has(r._rowId);
+      const rowClasses = [];
+      if (!isPlot) rowClasses.push('row-excluded');
+      if (isHl) rowClasses.push('row-highlighted');
+
+      bodyHtml += `<tr class="${rowClasses.join(' ')}" data-row-id="${r._rowId}">`;
+      bodyHtml += `<td class="chk-cell"><input type="checkbox" class="chk-row-plot" data-row-id="${r._rowId}" ${isPlot ? 'checked' : ''} title="作図対象に含める"></td>`;
+      bodyHtml += `<td class="chk-cell"><input type="checkbox" class="chk-row-highlight" data-row-id="${r._rowId}" ${isHl ? 'checked' : ''} title="図上で強調表示"></td>`;
+      bodyHtml += `<td class="row-num-cell">${r._rowId + 1}</td>`;
+
       columns.forEach(col => {
         const val = r[col];
         const isNum = numericColumns.includes(col);
@@ -658,6 +761,108 @@ document.addEventListener('DOMContentLoaded', () => {
       bodyHtml += '</tr>';
     });
     elements.dataTableBody.innerHTML = bodyHtml;
+  }
+
+  // テーブル内チェックボックスイベント (委譲ハンドラ)
+  if (elements.dataTableBody) {
+    elements.dataTableBody.addEventListener('change', (e) => {
+      const target = e.target;
+      if (!target) return;
+
+      const rowId = parseInt(target.dataset.rowId, 10);
+      if (isNaN(rowId)) return;
+
+      const tr = target.closest('tr');
+
+      if (target.classList.contains('chk-row-plot')) {
+        if (target.checked) {
+          state.excludedRowIds.delete(rowId);
+          if (tr) tr.classList.remove('row-excluded');
+        } else {
+          state.excludedRowIds.add(rowId);
+          if (tr) tr.classList.add('row-excluded');
+        }
+        updateModalCount(elements.modalSearch ? elements.modalSearch.value.trim().length > 0 ? null : undefined : undefined);
+        redrawChart();
+      } else if (target.classList.contains('chk-row-highlight')) {
+        if (target.checked) {
+          state.highlightedRowIds.add(rowId);
+          if (tr) tr.classList.add('row-highlighted');
+        } else {
+          state.highlightedRowIds.delete(rowId);
+          if (tr) tr.classList.remove('row-highlighted');
+        }
+        updateModalCount();
+        redrawChart();
+      }
+    });
+  }
+
+  // モーダル内作図列セレクタのイベント
+  if (elements.modalSelectLabel) {
+    elements.modalSelectLabel.addEventListener('change', () => {
+      elements.selectLabel.value = elements.modalSelectLabel.value;
+      redrawChart();
+      renderDataTable(elements.modalSearch ? elements.modalSearch.value : '');
+    });
+  }
+
+  if (elements.modalSelectX) {
+    elements.modalSelectX.addEventListener('change', () => {
+      elements.selectX.value = elements.modalSelectX.value;
+      elements.xTitle.value = elements.modalSelectX.value;
+      redrawChart();
+      renderDataTable(elements.modalSearch ? elements.modalSearch.value : '');
+    });
+  }
+
+  if (elements.modalSelectY) {
+    elements.modalSelectY.addEventListener('change', () => {
+      elements.selectY.value = elements.modalSelectY.value;
+      elements.yTitle.value = elements.modalSelectY.value;
+      redrawChart();
+      renderDataTable(elements.modalSearch ? elements.modalSearch.value : '');
+    });
+  }
+
+  // サイドバーの列セレクタが変更されたらモーダル側も同期
+  [elements.selectLabel, elements.selectX, elements.selectY].forEach(el => {
+    if (el) {
+      el.addEventListener('change', () => {
+        syncModalColumnSelectors();
+      });
+    }
+  });
+
+  // モーダル内一括操作ボタン
+  if (elements.btnModalSelectAll) {
+    elements.btnModalSelectAll.addEventListener('click', () => {
+      if (!state.tableData) return;
+      state.excludedRowIds.clear();
+      renderDataTable(elements.modalSearch ? elements.modalSearch.value : '');
+      redrawChart();
+      showToast('すべての行を作図対象に設定しました', 'info');
+    });
+  }
+
+  if (elements.btnModalDeselectAll) {
+    elements.btnModalDeselectAll.addEventListener('click', () => {
+      if (!state.tableData) return;
+      state.tableData.rows.forEach(r => state.excludedRowIds.add(r._rowId));
+      renderDataTable(elements.modalSearch ? elements.modalSearch.value : '');
+      redrawChart();
+      showToast('すべての行を作図対象から除外しました', 'info');
+    });
+  }
+
+  if (elements.btnModalClearHighlight) {
+    elements.btnModalClearHighlight.addEventListener('click', () => {
+      if (!state.tableData) return;
+      state.highlightedRowIds.clear();
+      renderDataTable(elements.modalSearch ? elements.modalSearch.value : '');
+      redrawChart();
+      showToast('すべての強調表示を解除しました', 'info');
+    });
   }
 
   // データ確認メニューボタンのイベント

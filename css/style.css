@@ -796,3 +796,149 @@ body {
 .regression-stat-badge:active {
   cursor: grabbing !important;
 }
+
+
+/* モーダル内作図列＆行コントロールバー */
+.modal-controls-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 16px;
+  background-color: #f1f5f9;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 11px;
+}
+
+.modal-col-selectors {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.modal-col-selectors .control-label {
+  font-weight: 700;
+  color: #475569;
+}
+
+.modal-select-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background-color: #ffffff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid #cbd5e1;
+  cursor: pointer;
+}
+
+.modal-select-item .pill-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+.pill-label { background-color: #f3e8ff; color: #7e22ce; }
+.pill-x { background-color: #e0f2fe; color: #0369a1; }
+.pill-y { background-color: #dcfce7; color: #15803d; }
+
+.modal-select {
+  padding: 2px 6px;
+  font-size: 11px;
+  border: none;
+  background: transparent;
+  color: #1e293b;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+}
+
+.modal-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.row-action-label {
+  font-weight: 700;
+  color: #64748b;
+  font-size: 10px;
+}
+
+.action-divider {
+  display: inline-block;
+  width: 1px;
+  height: 14px;
+  background-color: #cbd5e1;
+  margin: 0 4px;
+}
+
+/* モーダルデータテーブルのチェックボックスと強調 */
+.preview-data-table th.chk-col-header {
+  text-align: center;
+  padding: 6px 8px;
+  width: 44px;
+}
+
+.preview-data-table td.chk-cell {
+  text-align: center;
+  padding: 4px 6px;
+}
+
+.preview-data-table td.chk-cell input[type="checkbox"] {
+  cursor: pointer;
+  width: 15px;
+  height: 15px;
+  accent-color: #2563eb;
+  vertical-align: middle;
+}
+
+.preview-data-table td.chk-cell input.chk-row-highlight {
+  accent-color: #ea580c;
+}
+
+/* 除外行のスタイル */
+.preview-data-table tr.row-excluded td {
+  color: #94a3b8;
+  background-color: #f8fafc;
+  text-decoration: line-through;
+  text-decoration-color: #cbd5e1;
+}
+
+.preview-data-table tr.row-excluded td.chk-cell,
+.preview-data-table tr.row-excluded td.row-num-cell {
+  text-decoration: none;
+}
+
+/* 強調行のスタイル */
+.preview-data-table tr.row-highlighted td {
+  background-color: #fff7ed !important;
+  color: #9a3412;
+  font-weight: 600;
+}
+
+.preview-data-table tr.row-highlighted:hover td {
+  background-color: #ffedd5 !important;
+}
+
+.preview-data-table tr.row-highlighted td:first-child {
+  border-left: 3px solid #ea580c;
+}
+
+/* 列ヘッダーのロールタグ */
+.col-role-tag {
+  display: inline-block;
+  font-size: 9px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  margin-left: 4px;
+  vertical-align: middle;
+  font-weight: 700;
+}
+.col-role-tag.role-x { background-color: #0284c7; color: #ffffff; }
+.col-role-tag.role-y { background-color: #16a34a; color: #ffffff; }
+.col-role-tag.role-label { background-color: #9333ea; color: #ffffff; }

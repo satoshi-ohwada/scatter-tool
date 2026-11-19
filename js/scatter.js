@@ -722,7 +722,8 @@ class ScatterPlot {
       py: toPy(r._y),
       isOutlier: r._isOutlier,
       rankX: r._rankX,
-      rankY: r._rankY
+      rankY: r._rankY,
+      isHighlighted: !!r._highlighted
     }));
 
     // ラベルレイアウト計算
@@ -744,9 +745,10 @@ class ScatterPlot {
       const leader = this.layoutEngine.getLeaderLine(label);
       const line = document.createElementNS(svgNS, "line");
       line.setAttribute("data-leader-id", label.id);
-      line.setAttribute("stroke", theme.leaderLine);
-      line.setAttribute("stroke-width", "1");
-      line.setAttribute("stroke-dasharray", "2,2");
+      const isHl = !!label.isHighlighted;
+      line.setAttribute("stroke", isHl ? "#ea580c" : theme.leaderLine);
+      line.setAttribute("stroke-width", isHl ? "1.5" : "1");
+      line.setAttribute("stroke-dasharray", isHl ? "none" : "2,2");
       if (leader && this.options.showLeaderLines && label.visible) {
         line.setAttribute("x1", leader.x1);
         line.setAttribute("y1", leader.y1);
@@ -767,29 +769,34 @@ class ScatterPlot {
       const circle = document.createElementNS(svgNS, "circle");
       circle.setAttribute("cx", p.px);
       circle.setAttribute("cy", p.py);
-      circle.setAttribute("r", this.options.pointRadius);
-      circle.setAttribute("fill", theme.pointFill);
-      circle.setAttribute("stroke", theme.pointStroke);
-      circle.setAttribute("stroke-width", "1.5");
-      circle.setAttribute("fill-opacity", this.options.pointOpacity);
+      const isHl = !!p.isHighlighted;
+      const baseR = isHl ? this.options.pointRadius + 2.5 : this.options.pointRadius;
+      circle.setAttribute("r", baseR);
+      circle.setAttribute("fill", isHl ? "#ea580c" : theme.pointFill);
+      circle.setAttribute("stroke", isHl ? "#ffffff" : theme.pointStroke);
+      circle.setAttribute("stroke-width", isHl ? "2" : "1.5");
+      circle.setAttribute("fill-opacity", isHl ? "1" : this.options.pointOpacity);
+      if (isHl) {
+        circle.style.filter = "drop-shadow(0 1px 2px rgba(234, 88, 12, 0.4))";
+      }
       circle.style.cursor = "pointer";
       circle.style.transition = "transform 0.15s ease, r 0.15s ease";
 
       // ツールチップ用タイトル要素
       const titleEl = document.createElementNS(svgNS, "title");
-      titleEl.textContent = `${p.name}\n${xKey}: ${p.x.toLocaleString()}\n${yKey}: ${p.y.toLocaleString()}`;
+      titleEl.textContent = `${p.name}${isHl ? " [★強調]" : ""}\n${xKey}: ${p.x.toLocaleString()}\n${yKey}: ${p.y.toLocaleString()}`;
       circle.appendChild(titleEl);
 
       // ホバーハイライト
       circle.addEventListener('mouseenter', () => {
-        circle.setAttribute("r", this.options.pointRadius + 3);
+        circle.setAttribute("r", baseR + 3);
         circle.setAttribute("fill-opacity", "1");
-        circle.setAttribute("stroke-width", "2.5");
+        circle.setAttribute("stroke-width", isHl ? "3" : "2.5");
       });
       circle.addEventListener('mouseleave', () => {
-        circle.setAttribute("r", this.options.pointRadius);
-        circle.setAttribute("fill-opacity", this.options.pointOpacity);
-        circle.setAttribute("stroke-width", "1.5");
+        circle.setAttribute("r", baseR);
+        circle.setAttribute("fill-opacity", isHl ? "1" : this.options.pointOpacity);
+        circle.setAttribute("stroke-width", isHl ? "2" : "1.5");
       });
 
       pointsGroup.appendChild(circle);
@@ -809,24 +816,28 @@ class ScatterPlot {
       g.style.cursor = "move";
 
       // ラベル背景のピル
+      const isHl = !!label.isHighlighted;
       const rect = document.createElementNS(svgNS, "rect");
       rect.setAttribute("x", -label.width / 2);
       rect.setAttribute("y", -label.height / 2);
       rect.setAttribute("width", label.width);
       rect.setAttribute("height", label.height);
       rect.setAttribute("rx", "4");
-      rect.setAttribute("fill", theme.labelBg);
-      rect.setAttribute("stroke", label.userMoved ? theme.regLine : theme.labelBorder);
-      rect.setAttribute("stroke-width", label.userMoved ? "1.5" : "1");
+      rect.setAttribute("fill", isHl ? "#fff7ed" : theme.labelBg);
+      rect.setAttribute("stroke", isHl ? "#ea580c" : (label.userMoved ? theme.regLine : theme.labelBorder));
+      rect.setAttribute("stroke-width", isHl ? "2" : (label.userMoved ? "1.5" : "1"));
+      if (isHl) {
+        rect.style.filter = "drop-shadow(0 1px 2px rgba(234, 88, 12, 0.25))";
+      }
       g.appendChild(rect);
 
       // テキスト
       const txt = document.createElementNS(svgNS, "text");
       txt.setAttribute("text-anchor", "middle");
       txt.setAttribute("dominant-baseline", "central");
-      txt.setAttribute("fill", theme.labelText);
+      txt.setAttribute("fill", isHl ? "#c2410c" : theme.labelText);
       txt.setAttribute("font-size", this.options.fontSize);
-      txt.setAttribute("font-weight", label.userMoved ? "bold" : "normal");
+      txt.setAttribute("font-weight", (isHl || label.userMoved) ? "bold" : "normal");
       txt.textContent = label.name;
       g.appendChild(txt);
 
