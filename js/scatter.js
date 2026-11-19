@@ -64,8 +64,8 @@ class ScatterPlot {
         regBand: 'rgba(220, 38, 38, 0.12)',
         line45: '#059669',
         quadrantLine: '#94a3b8',
-        quadrantBg: ['#e0f2fe', '#fef9c3', '#dcfce7', '#ffedd5'], // 淡色パステル: Q1(青:sky-100), Q2(黄:yellow-100), Q3(緑:green-100), Q4(橙:orange-100)
-        quadrantFg: ['#005aff', '#b45309', '#15803d', '#c2410c'], // CUD・高視認性: Q1(青), Q2(黄/アンバー), Q3(緑), Q4(橙)
+        quadrantBg: ['#bae6fd', '#fef08a', '#fecdd3', '#bbf7d0'], // 高識別パステル: Q1(青:sky-200), Q2(黄:yellow-200), Q3(桃:rose-200), Q4(緑:green-200)
+        quadrantFg: ['#005aff', '#b45309', '#e11d48', '#15803d'], // CUD・高コントラスト: Q1(青), Q2(黄/アンバー), Q3(赤桃/ローズ), Q4(緑)
         leaderLine: '#64748b',
         labelBg: 'rgba(255, 255, 255, 0.92)',
         labelBorder: '#cbd5e1',
@@ -83,8 +83,8 @@ class ScatterPlot {
         regBand: 'rgba(225, 29, 72, 0.12)',
         line45: '#2563eb',
         quadrantLine: '#5eead4',
-        quadrantBg: ['#e0f2fe', '#fef9c3', '#dcfce7', '#ffedd5'],
-        quadrantFg: ['#005aff', '#b45309', '#15803d', '#c2410c'],
+        quadrantBg: ['#bae6fd', '#fef08a', '#fecdd3', '#bbf7d0'],
+        quadrantFg: ['#005aff', '#b45309', '#e11d48', '#15803d'],
         leaderLine: '#14b8a6',
         labelBg: 'rgba(255, 255, 255, 0.92)',
         labelBorder: '#99f6e4',
@@ -102,8 +102,8 @@ class ScatterPlot {
         regBand: 'rgba(234, 88, 12, 0.12)',
         line45: '#0284c7',
         quadrantLine: '#d8b4fe',
-        quadrantBg: ['#e0e7ff', '#fef9c3', '#dcfce7', '#ffedd5'],
-        quadrantFg: ['#005aff', '#b45309', '#15803d', '#c2410c'],
+        quadrantBg: ['#bae6fd', '#fef08a', '#fecdd3', '#bbf7d0'],
+        quadrantFg: ['#005aff', '#b45309', '#e11d48', '#15803d'],
         leaderLine: '#a855f7',
         labelBg: 'rgba(255, 255, 255, 0.92)',
         labelBorder: '#e9d5ff',
@@ -121,8 +121,8 @@ class ScatterPlot {
         regBand: 'rgba(0, 0, 0, 0.08)',
         line45: '#737373',
         quadrantLine: '#a3a3a3',
-        quadrantBg: ['#e2e8f0', '#fef9c3', '#dcfce7', '#ffedd5'],
-        quadrantFg: ['#1e293b', '#b45309', '#15803d', '#c2410c'],
+        quadrantBg: ['#cbd5e1', '#fef08a', '#fecdd3', '#bbf7d0'],
+        quadrantFg: ['#1e293b', '#b45309', '#e11d48', '#15803d'],
         leaderLine: '#525252',
         labelBg: 'rgba(255, 255, 255, 0.95)',
         labelBorder: '#a3a3a3',
@@ -456,7 +456,7 @@ class ScatterPlot {
           r.setAttribute("width", q.w);
           r.setAttribute("height", q.h);
           r.setAttribute("fill", q.fill);
-          r.setAttribute("opacity", "0.55");
+          r.setAttribute("opacity", "0.80");
           svg.appendChild(r);
         }
       });
@@ -697,7 +697,7 @@ class ScatterPlot {
 
       // 4象限の名称ラベル
       const qLabels = this.options.quadrantLabels;
-      const qTextColors = theme.quadrantFg || ['#005aff', '#b45309', '#15803d', '#c2410c']; // Q1(青), Q2(黄), Q3(緑), Q4(橙)
+      const qTextColors = theme.quadrantFg || ['#005aff', '#b45309', '#e11d48', '#15803d']; // Q1(青), Q2(黄), Q3(ピンク), Q4(緑)
       const cornerOffsets = [
         { label: qLabels.q1, x: margin.left + plotW - 12, y: margin.top + 20, anchor: 'end', color: qTextColors[0] },
         { label: qLabels.q2, x: margin.left + 12, y: margin.top + 20, anchor: 'start', color: qTextColors[1] },
@@ -790,7 +790,7 @@ class ScatterPlot {
       if (isHl) {
         pColor = "#ea580c";
       } else if (this.options.colorPointsByQuadrant && this.options.showQuadrant) {
-        const qFg = theme.quadrantFg || ['#005aff', '#b45309', '#15803d', '#c2410c'];
+        const qFg = theme.quadrantFg || ['#005aff', '#b45309', '#e11d48', '#15803d'];
         if (p.x >= splitX && p.y >= splitY) {
           pColor = qFg[0]; // Q1
         } else if (p.x < splitX && p.y >= splitY) {

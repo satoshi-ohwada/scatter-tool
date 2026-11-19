@@ -598,10 +598,10 @@ body {
   font-weight: 600;
 }
 
-.q-badge.q1 { background-color: #e0f2fe; color: #005aff; }
-.q-badge.q2 { background-color: #fef9c3; color: #b45309; }
-.q-badge.q3 { background-color: #dcfce7; color: #15803d; }
-.q-badge.q4 { background-color: #ffedd5; color: #c2410c; }
+.q-badge.q1 { background-color: #bae6fd; color: #005aff; }
+.q-badge.q2 { background-color: #fef08a; color: #b45309; }
+.q-badge.q3 { background-color: #fecdd3; color: #e11d48; }
+.q-badge.q4 { background-color: #bbf7d0; color: #15803d; }
 
 .font-bold { font-weight: bold; }
 .text-primary { color: var(--primary); }
