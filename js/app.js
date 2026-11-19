@@ -229,14 +229,22 @@ document.addEventListener('DOMContentLoaded', () => {
     redrawChart();
   }
 
-  // サンプルデータの読み込み
+  // サンプルデータの読み込み (総務省 令和7年国勢調査 表Ⅰ-2-1)
   async function loadSampleData() {
     try {
-      const res = await fetch('data/sample_retail.csv');
+      const res = await fetch('data/sample_census2025.csv');
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const text = await res.text();
       const table = DataParser.parseCSVText(text);
-      applyTableData(table, 'sample_retail.csv');
+      applyTableData(table, '令和7年国勢調査 表Ⅰ-2-1 (都道府県別人口増減・密度)');
+      elements.chartTitle.value = '令和7年国勢調査 都道府県別 人口密度 vs 人口増減率';
+      elements.xTitle.value = '人口増減率 (%) [2020年〜2025年]';
+      elements.yTitle.value = '人口密度 (人/km²)';
+      elements.q1Label.value = 'Q1: 高密度・増加/高維持 (大都市圏)';
+      elements.q2Label.value = 'Q2: 高密度・人口減少 (都市圏)';
+      elements.q3Label.value = 'Q3: 低密度・人口減少 (地方過疎圏)';
+      elements.q4Label.value = 'Q4: 低密度・善戦/緩縮 (地方中核・沖縄等)';
+      redrawChart();
     } catch (err) {
       console.error(err);
       showToast(`サンプルデータの読込に失敗しました: ${err.message}`, 'error');
