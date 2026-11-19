@@ -63,7 +63,7 @@ class ScatterPlot {
         regBand: 'rgba(220, 38, 38, 0.12)',
         line45: '#059669',
         quadrantLine: '#94a3b8',
-        quadrantBg: ['#eff6ff', '#f0fdf4', '#f8fafc', '#fff7ed'], // Q1, Q2, Q3, Q4
+        quadrantBg: ['#e0f2fe', '#dcfce7', '#f1f5f9', '#ffedd5'], // Q1(青), Q2(緑), Q3(グレー), Q4(橙)
         leaderLine: '#64748b',
         labelBg: 'rgba(255, 255, 255, 0.92)',
         labelBorder: '#cbd5e1',
@@ -81,7 +81,7 @@ class ScatterPlot {
         regBand: 'rgba(225, 29, 72, 0.12)',
         line45: '#2563eb',
         quadrantLine: '#5eead4',
-        quadrantBg: ['#ecfdf5', '#f0fdf4', '#f0fdfa', '#fefce8'],
+        quadrantBg: ['#ccfbf1', '#dbeafe', '#f0fdf4', '#fef3c7'],
         leaderLine: '#14b8a6',
         labelBg: 'rgba(255, 255, 255, 0.92)',
         labelBorder: '#99f6e4',
@@ -99,7 +99,7 @@ class ScatterPlot {
         regBand: 'rgba(234, 88, 12, 0.12)',
         line45: '#0284c7',
         quadrantLine: '#d8b4fe',
-        quadrantBg: ['#faf5ff', '#eff6ff', '#fdf2f8', '#fffbeb'],
+        quadrantBg: ['#e0e7ff', '#fce7f3', '#f3e8ff', '#fef3c7'],
         leaderLine: '#a855f7',
         labelBg: 'rgba(255, 255, 255, 0.92)',
         labelBorder: '#e9d5ff',
@@ -450,7 +450,7 @@ class ScatterPlot {
           r.setAttribute("width", q.w);
           r.setAttribute("height", q.h);
           r.setAttribute("fill", q.fill);
-          r.setAttribute("opacity", "0.65");
+          r.setAttribute("opacity", "0.88");
           svg.appendChild(r);
         }
       });
@@ -691,11 +691,12 @@ class ScatterPlot {
 
       // 4象限の名称ラベル
       const qLabels = this.options.quadrantLabels;
+      const qTextColors = ['#0369a1', '#15803d', '#475569', '#c2410c']; // Q1(青), Q2(緑), Q3(グレー), Q4(橙)
       const cornerOffsets = [
-        { label: qLabels.q1, x: margin.left + plotW - 12, y: margin.top + 20, anchor: 'end' },
-        { label: qLabels.q2, x: margin.left + 12, y: margin.top + 20, anchor: 'start' },
-        { label: qLabels.q3, x: margin.left + 12, y: margin.top + plotH - 12, anchor: 'start' },
-        { label: qLabels.q4, x: margin.left + plotW - 12, y: margin.top + plotH - 12, anchor: 'end' }
+        { label: qLabels.q1, x: margin.left + plotW - 12, y: margin.top + 20, anchor: 'end', color: qTextColors[0] },
+        { label: qLabels.q2, x: margin.left + 12, y: margin.top + 20, anchor: 'start', color: qTextColors[1] },
+        { label: qLabels.q3, x: margin.left + 12, y: margin.top + plotH - 12, anchor: 'start', color: qTextColors[2] },
+        { label: qLabels.q4, x: margin.left + plotW - 12, y: margin.top + plotH - 12, anchor: 'end', color: qTextColors[3] }
       ];
 
       cornerOffsets.forEach(co => {
@@ -704,10 +705,10 @@ class ScatterPlot {
           t.setAttribute("x", co.x);
           t.setAttribute("y", co.y);
           t.setAttribute("text-anchor", co.anchor);
-          t.setAttribute("fill", theme.axis);
+          t.setAttribute("fill", co.color);
           t.setAttribute("font-size", "11");
           t.setAttribute("font-weight", "bold");
-          t.setAttribute("opacity", "0.75");
+          t.setAttribute("opacity", "0.9");
           t.textContent = co.label;
           svg.appendChild(t);
         }
