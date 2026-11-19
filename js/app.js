@@ -253,9 +253,16 @@ document.addEventListener('DOMContentLoaded', () => {
       const text = await res.text();
       const table = DataParser.parseCSVText(text);
       applyTableData(table, '令和7年国勢調査 表Ⅰ-2-1 (都道府県別人口増減・密度)');
+
+      // サンプル散布図の初期分析軸 (人口増減率 vs 人口密度) を明示設定
+      const targetX = table.numericColumns.find(c => c.includes('増減率') && c.includes('2020-2025')) || table.numericColumns[0];
+      const targetY = table.numericColumns.find(c => c.includes('密度')) || table.numericColumns[1];
+      if (targetX) elements.selectX.value = targetX;
+      if (targetY) elements.selectY.value = targetY;
+
       elements.chartTitle.value = '令和7年国勢調査 都道府県別 人口密度 vs 人口増減率';
-      elements.xTitle.value = '人口増減率 (%) [2020年〜2025年]';
-      elements.yTitle.value = '人口密度 (人/km²)';
+      elements.xTitle.value = targetX || '人口増減率 (%) [2020年〜2025年]';
+      elements.yTitle.value = targetY || '人口密度 (人/km²)';
       elements.q1Label.value = 'Q1: 高密度・増加/高維持 (大都市圏)';
       elements.q2Label.value = 'Q2: 高密度・人口減少 (都市圏)';
       elements.q3Label.value = 'Q3: 低密度・人口減少 (地方過疎圏)';
