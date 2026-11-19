@@ -13,20 +13,10 @@
     <div class="brand">
       <span class="brand-icon">📊</span>
       <h1 class="brand-title">散布図作成ツール <span style="font-weight: normal; font-size: 14px; color: #64748b;">(QuickScatter)</span></h1>
-      <span class="brand-tag">完全ローカル・閉域対応</span>
     </div>
     <div class="header-actions">
-      <button id="btnViewData" class="btn" title="読み込んだテーブルデータの一覧・詳細を確認">
+      <button id="btnViewData" class="btn" title="読み込んだテーブルデータの一覧・詳細を確認 (検索・CSVコピー可能)">
         📄 データ確認
-      </button>
-      <button id="btnCopyPNG" class="btn btn-primary" title="高解像度画像をクリップボードにコピーしてExcelやPPTに貼り付けできます">
-        📋 画像をコピー
-      </button>
-      <button id="btnSavePNG" class="btn" title="プレゼン用PNG画像をダウンロード">
-        💾 PNG保存
-      </button>
-      <button id="btnSaveSVG" class="btn" title="拡大しても劣化しないベクター画像をダウンロード (PowerPoint/Illustrator対応)">
-        📐 SVG保存
       </button>
     </div>
   </header>
@@ -238,7 +228,7 @@
           </div>
           <div class="chart-toolbar-actions">
             <button id="btnResetView" class="btn btn-sm" title="手動で動かしたラベルや回帰式の位置、文字・点サイズを初期状態に戻します">
-              ↺ 位置・サイズをリセット
+              ↺ リセット
             </button>
             <button id="btnToggleSidebar" class="btn btn-sm" title="設定パネルを折りたたんで散布図を横いっぱいに拡大表示します">
               ◀ パネルを隠す
@@ -247,14 +237,14 @@
               ⛶ 全画面表示
             </button>
             <span class="toolbar-divider"></span>
-            <button id="btnToolbarCopyPNG" class="btn btn-sm btn-primary" title="現在画面に表示されている見たままの形で高解像度画像をクリップボードにコピー">
-              📋 コピー
+            <button id="btnCopyPNG" class="btn btn-sm btn-primary" title="現在画面に表示されている見たままの形で高解像度画像をクリップボードにコピー">
+              📋 画像をコピー
             </button>
-            <button id="btnToolbarSavePNG" class="btn btn-sm" title="現在画面に表示されている見たままの形で高解像度PNG画像を保存">
+            <button id="btnSavePNG" class="btn btn-sm" title="現在画面に表示されている見たままの形で高解像度PNG画像を保存">
               💾 PNG保存
             </button>
-            <button id="btnToolbarSaveSVG" class="btn btn-sm" title="現在画面に表示されている見たままの形でSVGベクター画像を保存">
-              📐 SVG
+            <button id="btnSaveSVG" class="btn btn-sm" title="現在画面に表示されている見たままの形でSVGベクター画像を保存">
+              📐 SVG保存
             </button>
           </div>
         </div>

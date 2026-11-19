@@ -65,15 +65,6 @@ body {
   color: #1e293b;
 }
 
-.brand-tag {
-  font-size: 11px;
-  background-color: #dbeafe;
-  color: #1d4ed8;
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-weight: 600;
-}
-
 .header-actions {
   display: flex;
   align-items: center;

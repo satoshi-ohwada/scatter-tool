@@ -65,11 +65,8 @@ document.addEventListener('DOMContentLoaded', () => {
     btnResetView: document.getElementById('btnResetView'),
     btnToggleSidebar: document.getElementById('btnToggleSidebar'),
     btnMaximizeChart: document.getElementById('btnMaximizeChart'),
-    btnToolbarCopyPNG: document.getElementById('btnToolbarCopyPNG'),
-    btnToolbarSavePNG: document.getElementById('btnToolbarSavePNG'),
-    btnToolbarSaveSVG: document.getElementById('btnToolbarSaveSVG'),
 
-    // エクスポート
+    // エクスポート (ツールバーに集約)
     btnSaveSVG: document.getElementById('btnSaveSVG'),
     btnSavePNG: document.getElementById('btnSavePNG'),
     btnCopyPNG: document.getElementById('btnCopyPNG'),
@@ -474,13 +471,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  elements.btnSaveSVG.addEventListener('click', handleSaveSVG);
-  elements.btnSavePNG.addEventListener('click', handleSavePNG);
-  elements.btnCopyPNG.addEventListener('click', handleCopyPNG);
-
-  if (elements.btnToolbarSaveSVG) elements.btnToolbarSaveSVG.addEventListener('click', handleSaveSVG);
-  if (elements.btnToolbarSavePNG) elements.btnToolbarSavePNG.addEventListener('click', handleSavePNG);
-  if (elements.btnToolbarCopyPNG) elements.btnToolbarCopyPNG.addEventListener('click', handleCopyPNG);
+  if (elements.btnSaveSVG) elements.btnSaveSVG.addEventListener('click', handleSaveSVG);
+  if (elements.btnSavePNG) elements.btnSavePNG.addEventListener('click', handleSavePNG);
+  if (elements.btnCopyPNG) elements.btnCopyPNG.addEventListener('click', handleCopyPNG);
 
   // エクスポート: 集計サマリーのテキストコピー
   elements.btnCopySummary.addEventListener('click', async () => {
