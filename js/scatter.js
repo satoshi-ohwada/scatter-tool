@@ -331,19 +331,6 @@ class ScatterPlot {
     this.currentRenderWidth = width;
     this.currentRenderHeight = height;
 
-    // タイトルや回帰式バッジの有無に応じて上部余白を最適化 (重なりを防止しグラフを最大化)
-    const hasTitle = Boolean(this.options.title && this.options.title.trim());
-    const hasRegEq = Boolean(this.options.showRegression && this.options.showRegressionEquation);
-    const margin = {
-      top: hasTitle ? 42 : (hasRegEq ? 34 : 22),
-      right: 28,
-      bottom: 42,
-      left: 52
-    };
-
-    const plotW = Math.max(100, width - margin.left - margin.right);
-    const plotH = Math.max(100, height - margin.top - margin.bottom);
-
     let xMin = Math.min(...xValues);
     let xMax = Math.max(...xValues);
     let yMin = Math.min(...yValues);
@@ -366,6 +353,30 @@ class ScatterPlot {
     const padY = (yMax - yMin) * 0.08 || 1;
     const scaleX = this.calcNiceScale(xMin - padX, xMax + padX, 7);
     const scaleY = this.calcNiceScale(yMin - padY, yMax + padY, 7);
+
+    // Y軸目盛り数値の最大文字幅を動的計算 (桁数が多い場合に縦軸タイトルとの重なりを完全防止)
+    let maxYTickCharLen = 3;
+    scaleY.ticks.forEach(t => {
+      const s = t.toLocaleString();
+      if (s.length > maxYTickCharLen) maxYTickCharLen = s.length;
+    });
+    const yTickTextWidth = Math.max(26, Math.round(maxYTickCharLen * 7.0 + 8));
+    this.yTickTextWidth = yTickTextWidth;
+    // Y軸タイトル(14px) + 余白(12px) + 目盛り数値幅 + 目盛り線(5px) + 余白
+    const dynamicMarginLeft = Math.max(56, yTickTextWidth + 30);
+
+    // タイトルや回帰式バッジの有無に応じて上部余白を最適化 (重なりを防止しグラフを最大化)
+    const hasTitle = Boolean(this.options.title && this.options.title.trim());
+    const hasRegEq = Boolean(this.options.showRegression && this.options.showRegressionEquation);
+    const margin = {
+      top: hasTitle ? 42 : (hasRegEq ? 34 : 22),
+      right: 28,
+      bottom: 54, // 横軸目盛り数値と横軸タイトルの重なりを完全防止するクリアランス (42 -> 54)
+      left: dynamicMarginLeft
+    };
+
+    const plotW = Math.max(100, width - margin.left - margin.right);
+    const plotH = Math.max(100, height - margin.top - margin.bottom);
 
     // 座標変換関数
     const toPx = (val) => margin.left + ((val - scaleX.min) / (scaleX.max - scaleX.min)) * plotW;
@@ -850,7 +861,7 @@ class ScatterPlot {
 
         const tickText = document.createElementNS(svgNS, "text");
         tickText.setAttribute("x", x);
-        tickText.setAttribute("y", margin.top + plotH + 18);
+        tickText.setAttribute("y", margin.top + plotH + 16);
         tickText.setAttribute("text-anchor", "middle");
         tickText.setAttribute("fill", theme.text);
         tickText.setAttribute("font-size", "11");
@@ -859,12 +870,13 @@ class ScatterPlot {
       }
     });
 
+    // X軸 (横軸) 項目名称 (目盛り数値と重ならないよう24pxのクリアランスを確保)
     const xLabel = document.createElementNS(svgNS, "text");
     xLabel.setAttribute("x", margin.left + plotW / 2);
-    xLabel.setAttribute("y", height - 15);
+    xLabel.setAttribute("y", margin.top + plotH + 40);
     xLabel.setAttribute("text-anchor", "middle");
     xLabel.setAttribute("fill", theme.text);
-    xLabel.setAttribute("font-size", "13");
+    xLabel.setAttribute("font-size", "12");
     xLabel.setAttribute("font-weight", "600");
     xLabel.textContent = this.options.xTitle || xKey;
     svg.appendChild(xLabel);
@@ -901,13 +913,15 @@ class ScatterPlot {
       }
     });
 
+    // Y軸 (縦軸) 項目名称 (目盛り数値の左端から一定マージンを保ち重なりを完全防止)
     const yLabel = document.createElementNS(svgNS, "text");
     yLabel.setAttribute("transform", `rotate(-90)`);
     yLabel.setAttribute("x", -(margin.top + plotH / 2));
-    yLabel.setAttribute("y", 22);
+    const yTitlePos = Math.max(16, margin.left - (this.yTickTextWidth || 30) - 14);
+    yLabel.setAttribute("y", yTitlePos);
     yLabel.setAttribute("text-anchor", "middle");
     yLabel.setAttribute("fill", theme.text);
-    yLabel.setAttribute("font-size", "13");
+    yLabel.setAttribute("font-size", "12");
     yLabel.setAttribute("font-weight", "600");
     yLabel.textContent = this.options.yTitle || yKey;
     svg.appendChild(yLabel);
