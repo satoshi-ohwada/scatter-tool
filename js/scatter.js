@@ -46,6 +46,7 @@ class ScatterPlot {
     this.draggedLabelId = null;
     this.dragStart = { x: 0, y: 0 };
     this.regBadgePos = null; // 回帰式バッジの位置 (null時は右上プロット外定位置)
+    this.regBadgeRel = null; // プロット枠に対する相対位置 (全画面/リサイズ時も位置関係を完全維持)
     this.svg = null;
 
     // テーマ定義
@@ -162,6 +163,13 @@ class ScatterPlot {
         if (badgeEl) {
           badgeEl.setAttribute('transform', `translate(${this.regBadgePos.x}, ${this.regBadgePos.y})`);
         }
+        // プロット枠右端・上端からの相対オフセットを保持
+        const plotRight = (this.lastMarginLeft || 52) + (this.lastPlotW || 600);
+        const plotTop = this.lastMarginTop || 42;
+        this.regBadgeRel = {
+          dx: this.regBadgePos.x - plotRight,
+          dy: this.regBadgePos.y - plotTop
+        };
       }
       return;
     }
@@ -362,6 +370,9 @@ class ScatterPlot {
     // 座標変換関数
     const toPx = (val) => margin.left + ((val - scaleX.min) / (scaleX.max - scaleX.min)) * plotW;
     const toPy = (val) => margin.top + plotH - ((val - scaleY.min) / (scaleY.max - scaleY.min)) * plotH;
+    this.lastMarginLeft = margin.left;
+    this.lastPlotW = plotW;
+    this.lastMarginTop = margin.top;
 
     // SVG構築
     const theme = this.getTheme();
@@ -369,6 +380,8 @@ class ScatterPlot {
     const svg = document.createElementNS(svgNS, "svg");
     svg.setAttribute("xmlns", svgNS);
     svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+    svg.setAttribute("width", width);
+    svg.setAttribute("height", height);
     svg.style.maxWidth = "100%";
     svg.style.maxHeight = "100%";
     svg.style.width = "auto";
@@ -542,7 +555,13 @@ class ScatterPlot {
         const defaultBoxX = margin.left + plotW - boxW;
         const defaultBoxY = Math.max(6, margin.top - boxH - 5);
 
-        if (!this.regBadgePos) {
+        // プロット枠からの相対位置があれば復元 (全画面化や画面サイズ変更時も位置関係を完全維持)
+        if (this.regBadgeRel) {
+          this.regBadgePos = {
+            x: Math.max(margin.left, Math.min(width - boxW - 8, margin.left + plotW + this.regBadgeRel.dx)),
+            y: Math.max(4, Math.min(height - boxH - 4, margin.top + this.regBadgeRel.dy))
+          };
+        } else if (!this.regBadgePos) {
           this.regBadgePos = { x: defaultBoxX, y: defaultBoxY };
         }
 
@@ -596,6 +615,7 @@ class ScatterPlot {
         });
         statBox.addEventListener('dblclick', (e) => {
           e.stopPropagation();
+          this.regBadgeRel = null;
           this.regBadgePos = { x: defaultBoxX, y: defaultBoxY };
           statBox.setAttribute("transform", `translate(${defaultBoxX}, ${defaultBoxY})`);
         });
@@ -923,18 +943,24 @@ class ScatterPlot {
     };
   }
 
-  // SVG文字列の取得
+  // SVG文字列の取得 (現在の画面サイズ・見たままの形を完全保証)
   getSVGString() {
     if (!this.svg) return null;
+    const baseW = this.currentRenderWidth || this.options.width;
+    const baseH = this.currentRenderHeight || this.options.height;
+
+    // クローンを作成し、スタンドアロン保存やCanvas描画に最適な寸法属性を明示
+    const clone = this.svg.cloneNode(true);
+    clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+    clone.setAttribute("width", baseW);
+    clone.setAttribute("height", baseH);
+    clone.setAttribute("viewBox", `0 0 ${baseW} ${baseH}`);
+
     const serializer = new XMLSerializer();
-    let source = serializer.serializeToString(this.svg);
-    if (!source.match(/^<svg[^>]+xmlns="http\:\/\/www\.w3\.org\/2000\/svg"/)) {
-      source = source.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
-    }
-    return source;
+    return serializer.serializeToString(clone);
   }
 
-  // SVGダウンロード
+  // SVGダウンロード (見たままの解像度とベクター品質)
   downloadSVG(fileName = 'scatter_plot.svg') {
     const svgStr = this.getSVGString();
     if (!svgStr) return;
@@ -949,58 +975,69 @@ class ScatterPlot {
     URL.revokeObjectURL(url);
   }
 
-  // PNG画像 (Canvas経由) のダウンロード
+  // PNG画像 (Canvas経由) のダウンロード (画面上の見たままの形を高解像度出力)
   downloadPNG(fileName = 'scatter_plot.png', scale = 2) {
     const svgStr = this.getSVGString();
-    if (!svgStr) return;
+    if (!svgStr) return Promise.resolve(null);
 
     const baseW = this.currentRenderWidth || this.options.width;
     const baseH = this.currentRenderHeight || this.options.height;
-    const width = baseW * scale;
-    const height = baseH * scale;
+    const width = Math.round(baseW * scale);
+    const height = Math.round(baseH * scale);
 
     const canvas = document.createElement('canvas');
     canvas.width = width;
     canvas.height = height;
     const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
 
     const img = new Image();
     const blob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
     const url = URL.createObjectURL(blob);
 
-    img.onload = () => {
-      ctx.drawImage(img, 0, 0, width, height);
-      URL.revokeObjectURL(url);
+    return new Promise((resolve) => {
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, width, height);
+        URL.revokeObjectURL(url);
 
-      canvas.toBlob((pngBlob) => {
-        if (!pngBlob) return;
-        const pngUrl = URL.createObjectURL(pngBlob);
-        const a = document.createElement('a');
-        a.href = pngUrl;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(pngUrl);
-      }, 'image/png');
-    };
-    img.src = url;
+        canvas.toBlob((pngBlob) => {
+          if (!pngBlob) return resolve(null);
+          const pngUrl = URL.createObjectURL(pngBlob);
+          const a = document.createElement('a');
+          a.href = pngUrl;
+          a.download = fileName;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(pngUrl);
+          resolve({ width, height });
+        }, 'image/png');
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        resolve(null);
+      };
+      img.src = url;
+    });
   }
 
-  // クリップボードへPNG画像をコピー
+  // クリップボードへPNG画像をコピー (画面上の見たままの形を出力)
   async copyPNGToClipboard(scale = 2) {
     const svgStr = this.getSVGString();
     if (!svgStr) throw new Error("グラフが作成されていません。");
 
     const baseW = this.currentRenderWidth || this.options.width;
     const baseH = this.currentRenderHeight || this.options.height;
-    const width = baseW * scale;
-    const height = baseH * scale;
+    const width = Math.round(baseW * scale);
+    const height = Math.round(baseH * scale);
 
     const canvas = document.createElement('canvas');
     canvas.width = width;
     canvas.height = height;
     const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
 
     const img = new Image();
     const blob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
@@ -1020,13 +1057,16 @@ class ScatterPlot {
             await navigator.clipboard.write([
               new ClipboardItem({ 'image/png': pngBlob })
             ]);
-            resolve(true);
+            resolve({ width, height });
           } catch (err) {
             reject(err);
           }
         }, 'image/png');
       };
-      img.onerror = reject;
+      img.onerror = (err) => {
+        URL.revokeObjectURL(url);
+        reject(err);
+      };
       img.src = url;
     });
   }
@@ -1036,6 +1076,7 @@ class ScatterPlot {
     if (this.layoutEngine) {
       this.layoutEngine.resetManualPositions();
     }
+    this.regBadgeRel = null;
     this.regBadgePos = null;
   }
 }

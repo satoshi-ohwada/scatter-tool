@@ -22,11 +22,14 @@ class LabelLayoutEngine {
     this.bounds = bounds;
     this.allPoints = points.map(p => ({ id: p.id, px: p.px, py: p.py }));
 
-    // 既存のユーザー移動位置を保持するためのマップ
+    // 既存のユーザー移動位置を保持するためのマップ (プロット点からの相対オフセット dx, dy を保持し、全画面化や画面サイズ変更時も位置関係を完全維持)
     const prevMovedMap = new Map();
     this.labels.forEach(l => {
       if (l.userMoved) {
-        prevMovedMap.set(l.id, { lx: l.lx, ly: l.ly });
+        prevMovedMap.set(l.id, {
+          dx: l.lx - l.px,
+          dy: l.ly - l.py
+        });
       }
     });
 
@@ -52,15 +55,15 @@ class LabelLayoutEngine {
         visible = p.rankX <= 10 || p.rankY <= 10;
       }
 
-      // 前回のユーザー手動位置があれば復元
+      // 前回のユーザー手動位置があればプロット点からの相対位置で復元
       const prevPos = prevMovedMap.get(p.id);
       const userMoved = !!prevPos;
 
       // スマート初期配置: 周囲8方向のうち、他のプロット点から最も離れた方向を選択
       let initLx, initLy;
       if (userMoved) {
-        initLx = prevPos.lx;
-        initLy = prevPos.ly;
+        initLx = Math.max(bounds.minX + w / 2, Math.min(bounds.maxX - w / 2, p.px + prevPos.dx));
+        initLy = Math.max(bounds.minY + h / 2, Math.min(bounds.maxY - h / 2, p.py + prevPos.dy));
       } else {
         const bestOffset = this.findBestInitialOffset(p, w, h, points);
         initLx = p.px + bestOffset.dx;

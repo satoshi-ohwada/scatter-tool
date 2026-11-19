@@ -394,6 +394,14 @@ body {
   gap: 6px;
 }
 
+.toolbar-divider {
+  display: inline-block;
+  width: 1px;
+  height: 18px;
+  background-color: var(--border-color);
+  margin: 0 2px;
+}
+
 .chart-wrapper {
   flex: 1;
   position: relative;

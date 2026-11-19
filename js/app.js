@@ -65,6 +65,9 @@ document.addEventListener('DOMContentLoaded', () => {
     btnResetView: document.getElementById('btnResetView'),
     btnToggleSidebar: document.getElementById('btnToggleSidebar'),
     btnMaximizeChart: document.getElementById('btnMaximizeChart'),
+    btnToolbarCopyPNG: document.getElementById('btnToolbarCopyPNG'),
+    btnToolbarSavePNG: document.getElementById('btnToolbarSavePNG'),
+    btnToolbarSaveSVG: document.getElementById('btnToolbarSaveSVG'),
 
     // エクスポート
     btnSaveSVG: document.getElementById('btnSaveSVG'),
@@ -439,32 +442,45 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.btnResetLabels.addEventListener('click', resetPositionsAndSizes);
   }
 
-  // エクスポート: SVGダウンロード
-  elements.btnSaveSVG.addEventListener('click', () => {
+  // エクスポート: SVGダウンロード (見たままの形で保存)
+  const handleSaveSVG = () => {
     if (!state.scatterPlot) return;
     const title = elements.chartTitle.value.trim() || 'scatter_plot';
     state.scatterPlot.downloadSVG(`${title}.svg`);
-    showToast('SVG形式で保存しました (ベクター画像)', 'success');
-  });
+    showToast('見たままの形でSVG保存しました (ベクター画像)', 'success');
+  };
 
-  // エクスポート: PNGダウンロード
-  elements.btnSavePNG.addEventListener('click', () => {
+  // エクスポート: PNGダウンロード (見たままの形・解像度で保存)
+  const handleSavePNG = async () => {
     if (!state.scatterPlot) return;
     const title = elements.chartTitle.value.trim() || 'scatter_plot';
-    state.scatterPlot.downloadPNG(`${title}.png`, 2); // 2倍解像度
-    showToast('高解像度PNG形式で保存しました', 'success');
-  });
+    const res = await state.scatterPlot.downloadPNG(`${title}.png`, 2);
+    if (res) {
+      showToast(`見たままの形で高解像度PNG保存しました (${res.width}×${res.height})`, 'success');
+    } else {
+      showToast('PNG保存が完了しました', 'success');
+    }
+  };
 
-  // エクスポート: 画像をクリップボードにコピー
-  elements.btnCopyPNG.addEventListener('click', async () => {
+  // エクスポート: 画像をクリップボードにコピー (見たままの形でコピー)
+  const handleCopyPNG = async () => {
     if (!state.scatterPlot) return;
     try {
-      await state.scatterPlot.copyPNGToClipboard(2);
-      showToast('グラフ画像をクリップボードにコピーしました！そのまま貼り付けできます', 'success');
+      const res = await state.scatterPlot.copyPNGToClipboard(2);
+      const sizeInfo = res ? ` (${res.width}×${res.height})` : '';
+      showToast(`見たままの形の高解像度画像をコピーしました！${sizeInfo} そのまま貼り付けできます`, 'success');
     } catch (err) {
       showToast(`コピーに失敗しました: ${err.message}`, 'error');
     }
-  });
+  };
+
+  elements.btnSaveSVG.addEventListener('click', handleSaveSVG);
+  elements.btnSavePNG.addEventListener('click', handleSavePNG);
+  elements.btnCopyPNG.addEventListener('click', handleCopyPNG);
+
+  if (elements.btnToolbarSaveSVG) elements.btnToolbarSaveSVG.addEventListener('click', handleSaveSVG);
+  if (elements.btnToolbarSavePNG) elements.btnToolbarSavePNG.addEventListener('click', handleSavePNG);
+  if (elements.btnToolbarCopyPNG) elements.btnToolbarCopyPNG.addEventListener('click', handleCopyPNG);
 
   // エクスポート: 集計サマリーのテキストコピー
   elements.btnCopySummary.addEventListener('click', async () => {
