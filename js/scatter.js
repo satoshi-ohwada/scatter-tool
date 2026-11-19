@@ -45,6 +45,7 @@ class ScatterPlot {
     this.isDragging = false;
     this.draggedLabelId = null;
     this.dragStart = { x: 0, y: 0 };
+    this.regBadgePos = null; // 回帰式バッジの位置 (null時は右上プロット外定位置)
     this.svg = null;
 
     // テーマ定義
@@ -153,6 +154,18 @@ class ScatterPlot {
     const dy = (e.clientY - this.dragStart.y) * scaleFactorY;
     this.dragStart = { x: e.clientX, y: e.clientY };
 
+    if (this.draggedLabelId === '__reg_badge__') {
+      if (this.regBadgePos) {
+        this.regBadgePos.x += dx;
+        this.regBadgePos.y += dy;
+        const badgeEl = this.svg.querySelector('.regression-stat-badge');
+        if (badgeEl) {
+          badgeEl.setAttribute('transform', `translate(${this.regBadgePos.x}, ${this.regBadgePos.y})`);
+        }
+      }
+      return;
+    }
+
     const label = this.layoutEngine.labels.find(l => l.id === this.draggedLabelId);
     if (label) {
       this.layoutEngine.updateLabelPosition(label.id, label.lx + dx, label.ly + dy);
@@ -162,6 +175,12 @@ class ScatterPlot {
 
   onMouseUp() {
     if (this.isDragging) {
+      if (this.draggedLabelId === '__reg_badge__') {
+        const badgeEl = this.svg ? this.svg.querySelector('.regression-stat-badge') : null;
+        if (badgeEl) {
+          badgeEl.style.cursor = 'grab';
+        }
+      }
       this.isDragging = false;
       this.draggedLabelId = null;
     }
@@ -304,10 +323,11 @@ class ScatterPlot {
     this.currentRenderWidth = width;
     this.currentRenderHeight = height;
 
-    // タイトルの有無に応じて上部余白を最適化 (無駄な余白を削減してグラフを最大化)
+    // タイトルや回帰式バッジの有無に応じて上部余白を最適化 (重なりを防止しグラフを最大化)
     const hasTitle = Boolean(this.options.title && this.options.title.trim());
+    const hasRegEq = Boolean(this.options.showRegression && this.options.showRegressionEquation);
     const margin = {
-      top: hasTitle ? 38 : 22,
+      top: hasTitle ? 42 : (hasRegEq ? 34 : 22),
       right: 28,
       bottom: 42,
       left: 52
@@ -503,7 +523,7 @@ class ScatterPlot {
       regLine.setAttribute("stroke-width", "2");
       svg.appendChild(regLine);
 
-      // 回帰統計ボックス (控えめで上品なミニマルデザイン & 表示・非表示選択対応)
+      // 回帰統計ボックス (控えめで上品なミニマルデザイン & プロット枠外配置で象限ラベル等との重なりを防止)
       if (this.options.showRegressionEquation) {
         const sign = regression.intercept >= 0 ? '+' : '-';
         const absIntercept = Math.abs(regression.intercept).toFixed(2);
@@ -517,26 +537,38 @@ class ScatterPlot {
         const textLen = (eqText + "  " + r2Text).length;
         const boxW = Math.max(140, textLen * 6.4 + 16);
         const boxH = 22;
-        const boxX = margin.left + plotW - boxW - 8;
-        const boxY = margin.top + 8;
+
+        // デフォルト位置: プロット枠外の上部ヘッダー右端 (象限ラベルやプロット点と絶対に重ならない)
+        const defaultBoxX = margin.left + plotW - boxW;
+        const defaultBoxY = Math.max(6, margin.top - boxH - 5);
+
+        if (!this.regBadgePos) {
+          this.regBadgePos = { x: defaultBoxX, y: defaultBoxY };
+        }
+
+        statBox.setAttribute("transform", `translate(${this.regBadgePos.x}, ${this.regBadgePos.y})`);
+        statBox.style.cursor = "grab";
+        statBox.title = "回帰式バッジ（ドラッグで移動、ダブルクリックで右上定位置にリセット）";
 
         const boxBg = document.createElementNS(svgNS, "rect");
-        boxBg.setAttribute("x", boxX);
-        boxBg.setAttribute("y", boxY);
+        boxBg.setAttribute("x", 0);
+        boxBg.setAttribute("y", 0);
         boxBg.setAttribute("width", boxW);
         boxBg.setAttribute("height", boxH);
         boxBg.setAttribute("rx", "11");
-        boxBg.setAttribute("fill", "rgba(255, 255, 255, 0.88)");
+        boxBg.setAttribute("fill", "rgba(255, 255, 255, 0.92)");
         boxBg.setAttribute("stroke", "#cbd5e1");
         boxBg.setAttribute("stroke-width", "0.8");
+        boxBg.style.filter = "drop-shadow(0 1px 2px rgba(0,0,0,0.06))";
         statBox.appendChild(boxBg);
 
         const t = document.createElementNS(svgNS, "text");
-        t.setAttribute("x", boxX + boxW / 2);
-        t.setAttribute("y", boxY + 14.5);
+        t.setAttribute("x", boxW / 2);
+        t.setAttribute("y", 14.5);
         t.setAttribute("text-anchor", "middle");
         t.setAttribute("font-size", "10");
         t.setAttribute("font-family", "monospace, system-ui, sans-serif");
+        t.style.userSelect = "none";
 
         const tSpanEq = document.createElementNS(svgNS, "tspan");
         tSpanEq.setAttribute("fill", theme.regLine);
@@ -556,6 +588,18 @@ class ScatterPlot {
         t.appendChild(tSpanR2);
 
         statBox.appendChild(t);
+
+        // ドラッグ & リセットイベント
+        statBox.addEventListener('mousedown', (e) => {
+          this.onMouseDownLabel(e, '__reg_badge__');
+          statBox.style.cursor = "grabbing";
+        });
+        statBox.addEventListener('dblclick', (e) => {
+          e.stopPropagation();
+          this.regBadgePos = { x: defaultBoxX, y: defaultBoxY };
+          statBox.setAttribute("transform", `translate(${defaultBoxX}, ${defaultBoxY})`);
+        });
+
         svg.appendChild(statBox);
       }
     }
