@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>散布図作成ツール (QuickScatter)</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- アプリケーションヘッダー -->
+  <header class="app-header">
+    <div class="brand">
+      <span class="brand-icon">📊</span>
+      <h1 class="brand-title">散布図作成ツール <span style="font-weight: normal; font-size: 14px; color: #64748b;">(QuickScatter)</span></h1>
+      <span class="brand-tag">完全ローカル・閉域対応</span>
+    </div>
+    <div class="header-actions">
+      <button id="btnCopyPNG" class="btn btn-primary" title="高解像度画像をクリップボードにコピーしてExcelやPPTに貼り付けできます">
+        📋 画像をコピー
+      </button>
+      <button id="btnSavePNG" class="btn" title="プレゼン用PNG画像をダウンロード">
+        💾 PNG保存
+      </button>
+      <button id="btnSaveSVG" class="btn" title="拡大しても劣化しないベクター画像をダウンロード (PowerPoint/Illustrator対応)">
+        📐 SVG保存
+      </button>
+    </div>
+  </header>
+
+  <!-- メインレイアウト -->
+  <div class="app-body">
+    
+    <!-- 左サイドバー: 設定コントロール -->
+    <aside class="sidebar">
+
+      <!-- 1. データ取り込み -->
+      <section class="panel-card">
+        <div class="panel-card-title">
+          <span><span class="icon">📂</span>1. データ読み込み</span>
+        </div>
+        <div id="dropZone" class="drop-zone">
+          <div class="drop-icon">📁</div>
+          <div class="drop-text">CSV / Excel をドラッグ＆ドロップ</div>
+          <div class="drop-sub">またはクリックしてファイル選択</div>
+          <input type="file" id="fileInput" accept=".csv,.tsv,.txt,.xlsx,.xls" style="display: none;">
+        </div>
+        <div class="drop-buttons">
+          <button id="btnPaste" class="btn btn-sm btn-block" title="Excel等でコピーしたデータを直接貼り付け">
+            📋 コピペ取込
+          </button>
+          <button id="btnSample" class="btn btn-sm btn-block" title="サンプルの店舗分析データを読み込み">
+            🧪 サンプル読込
+          </button>
+        </div>
+        <div id="fileInfo" class="file-info-badge" style="display: none;"></div>
+      </section>
+
+      <!-- 2. 列マッピング & タイトル -->
+      <section class="panel-card">
+        <div class="panel-card-title">
+          <span><span class="icon">🎯</span>2. 軸と名称の選択</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="selectLabel">名称列 (ラベル用 / A列)</label>
+          <select id="selectLabel" class="form-select"></select>
+        </div>
+        <div class="row-2col form-group">
+          <div>
+            <label class="form-label" for="selectX">横軸 (X 軸)</label>
+            <select id="selectX" class="form-select"></select>
+          </div>
+          <div>
+            <label class="form-label" for="selectY">縦軸 (Y 軸)</label>
+            <select id="selectY" class="form-select"></select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="chartTitle">グラフタイトル</label>
+          <input type="text" id="chartTitle" class="form-input" placeholder="散布図タイトル">
+        </div>
+        <div class="row-2col form-group">
+          <div>
+            <label class="form-label" for="xTitle">X軸ラベル (表示用)</label>
+            <input type="text" id="xTitle" class="form-input">
+          </div>
+          <div>
+            <label class="form-label" for="yTitle">Y軸ラベル (表示用)</label>
+            <input type="text" id="yTitle" class="form-input">
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. 分析・補助表現 -->
+      <section class="panel-card">
+        <div class="panel-card-title">
+          <span><span class="icon">📐</span>3. 分析・補助線</span>
+        </div>
+
+        <!-- 4象限分割 -->
+        <label class="check-label">
+          <input type="checkbox" id="chkQuadrant" checked>
+          <span>4象限分割 (十字線)</span>
+        </label>
+        <div class="sub-options">
+          <div class="form-group">
+            <label class="form-label" for="quadrantSplitType">分割基準</label>
+            <select id="quadrantSplitType" class="form-select">
+              <option value="mean" selected>平均値 (X平均・Y平均)</option>
+              <option value="median">中央値 (X中央値・Y中央値)</option>
+            </select>
+          </div>
+          <label class="check-label" style="font-size: 11px; font-weight: normal;">
+            <input type="checkbox" id="chkQuadrantBg" checked>
+            <span>象限エリアを淡く色分け</span>
+          </label>
+          <div class="form-group" style="margin-top: 4px;">
+            <label class="form-label">象限名 (カスタム)</label>
+            <div class="row-2col" style="margin-bottom: 4px;">
+              <input type="text" id="q2Label" class="form-input" value="第2象限 (低X・高Y)" placeholder="左上(Q2)">
+              <input type="text" id="q1Label" class="form-input" value="第1象限 (高X・高Y)" placeholder="右上(Q1)">
+            </div>
+            <div class="row-2col">
+              <input type="text" id="q3Label" class="form-input" value="第3象限 (低X・低Y)" placeholder="左下(Q3)">
+              <input type="text" id="q4Label" class="form-input" value="第4象限 (高X・低Y)" placeholder="右下(Q4)">
+            </div>
+          </div>
+        </div>
+
+        <!-- 45度線 -->
+        <label class="check-label">
+          <input type="checkbox" id="chkLine45">
+          <span>45度線 (y = x)</span>
+        </label>
+        <div class="sub-options">
+          <label class="check-label" style="font-size: 11px; font-weight: normal;">
+            <input type="checkbox" id="chkAspect1to1">
+            <span>軸スケールを1:1に固定</span>
+          </label>
+        </div>
+
+        <!-- 1次回帰線 -->
+        <label class="check-label">
+          <input type="checkbox" id="chkRegression" checked>
+          <span>1次回帰線 (回帰式・R²)</span>
+        </label>
+        <div class="sub-options">
+          <label class="check-label" style="font-size: 11px; font-weight: normal;">
+            <input type="checkbox" id="chkConfidence" checked>
+            <span>95%信頼区間の帯を表示</span>
+          </label>
+        </div>
+      </section>
+
+      <!-- 4. ラベル & 引き出し線 -->
+      <section class="panel-card">
+        <div class="panel-card-title">
+          <span><span class="icon">🏷️</span>4. ラベル & 引き出し線</span>
+          <button id="btnResetLabels" class="btn btn-sm" title="手動移動したラベルの位置をリセットして自動配置に戻します">リセット</button>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="selectLabelMode">ラベル表示対象</label>
+          <select id="selectLabelMode" class="form-select">
+            <option value="all" selected>すべてのプロットを表示</option>
+            <option value="outliers">外れ値のみ表示 (強調)</option>
+            <option value="top5">上位5件のみ表示</option>
+            <option value="top10">上位10件のみ表示</option>
+            <option value="none">非表示 (ホバー時のみ表示)</option>
+          </select>
+        </div>
+        <label class="check-label">
+          <input type="checkbox" id="chkLeaderLines" checked>
+          <span>重なり自動回避 &amp; 引き出し線</span>
+        </label>
+        <p style="font-size: 10px; color: #64748b; margin-top: 4px;">
+          ※グラフ上のラベルはマウスドラッグで自由に位置を微調整できます。引き出し線も自動追従します。
+        </p>
+      </section>
+
+      <!-- 5. デザイン・スタイル -->
+      <section class="panel-card">
+        <div class="panel-card-title">
+          <span><span class="icon">🎨</span>5. デザイン・スタイル</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="selectTheme">カラーテーマ</label>
+          <select id="selectTheme" class="form-select">
+            <option value="modernNavy" selected>Modern Navy (ビジネス・標準)</option>
+            <option value="emerald">Fresh Emerald (爽快グリーン)</option>
+            <option value="vibrant">Vibrant Purple (高コントラスト)</option>
+            <option value="academic">Academic Monochrome (モノクロ・論文)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">プロット点サイズ</label>
+          <div class="slider-group">
+            <input type="range" id="rangePointSize" min="3" max="14" step="1" value="6">
+            <span id="valPointSize" class="slider-val">6px</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">プロット透明度 (重なり可視化)</label>
+          <div class="slider-group">
+            <input type="range" id="rangeOpacity" min="0.2" max="1" step="0.05" value="0.75">
+            <span id="valOpacity" class="slider-val">75%</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">ラベル文字サイズ</label>
+          <div class="slider-group">
+            <input type="range" id="rangeFontSize" min="9" max="16" step="1" value="11">
+            <span id="valFontSize" class="slider-val">11px</span>
+          </div>
+        </div>
+      </section>
+
+    </aside>
+
+    <!-- 右メイン: グラフプレビュー & サマリー -->
+    <main class="main-content">
+      
+      <!-- グラフカード -->
+      <div class="chart-card">
+        <div class="chart-toolbar">
+          <div class="chart-toolbar-title">
+            <span>✨ プレビュー</span>
+            <span style="font-size: 11px; color: #94a3b8;">(マウスドラッグでラベル調整可能 / 点にホバーで数値確認)</span>
+          </div>
+        </div>
+        <div class="chart-wrapper">
+          <div id="chartContainer" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;"></div>
+        </div>
+      </div>
+
+      <!-- サマリーバー -->
+      <div class="summary-card">
+        <div id="summaryContent" class="summary-content">
+          <span class="text-muted">データ計算中...</span>
+        </div>
+        <button id="btnCopySummary" class="btn btn-sm" title="統計値と各象限のアイテム一覧をクリップボードにコピー">
+          📋 サマリーコピー
+        </button>
+      </div>
+
+    </main>
+
+  </div>
+
+  <!-- トースト通知 -->
+  <div id="toast" class="toast"></div>
+
+  <!-- 外部通信を行わないローカル同梱ライブラリ -->
+  <script src="lib/encoding.min.js"></script>
+  <script src="lib/papaparse.min.js"></script>
+  <script src="lib/xlsx.full.min.js"></script>
+
+  <!-- アプリケーションモジュール -->
+  <script src="js/stats.js"></script>
+  <script src="js/parser.js"></script>
+  <script src="js/label_layout.js"></script>
+  <script src="js/scatter.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,446 @@
+/**
+ * app.js - アプリケーション メインコントローラー
+ * UI連携、ファイル読込、イベントバインド、エクスポート
+ */
+
+document.addEventListener('DOMContentLoaded', () => {
+  // アプリケーション状態
+  const state = {
+    tableData: null,
+    scatterPlot: null,
+    currentStats: null
+  };
+
+  // DOM要素の参照取得
+  const elements = {
+    // ファイル入力
+    dropZone: document.getElementById('dropZone'),
+    fileInput: document.getElementById('fileInput'),
+    btnSample: document.getElementById('btnSample'),
+    btnPaste: document.getElementById('btnPaste'),
+    fileInfo: document.getElementById('fileInfo'),
+
+    // 列選択
+    selectLabel: document.getElementById('selectLabel'),
+    selectX: document.getElementById('selectX'),
+    selectY: document.getElementById('selectY'),
+    chartTitle: document.getElementById('chartTitle'),
+    xTitle: document.getElementById('xTitle'),
+    yTitle: document.getElementById('yTitle'),
+
+    // 補助線設定
+    chkQuadrant: document.getElementById('chkQuadrant'),
+    quadrantSplitType: document.getElementById('quadrantSplitType'),
+    chkQuadrantBg: document.getElementById('chkQuadrantBg'),
+    chkLine45: document.getElementById('chkLine45'),
+    chkAspect1to1: document.getElementById('chkAspect1to1'),
+    chkRegression: document.getElementById('chkRegression'),
+    chkConfidence: document.getElementById('chkConfidence'),
+
+    // 象限ラベル
+    q1Label: document.getElementById('q1Label'),
+    q2Label: document.getElementById('q2Label'),
+    q3Label: document.getElementById('q3Label'),
+    q4Label: document.getElementById('q4Label'),
+
+    // ラベル設定
+    selectLabelMode: document.getElementById('selectLabelMode'),
+    chkLeaderLines: document.getElementById('chkLeaderLines'),
+    btnResetLabels: document.getElementById('btnResetLabels'),
+
+    // スタイル設定
+    selectTheme: document.getElementById('selectTheme'),
+    rangePointSize: document.getElementById('rangePointSize'),
+    valPointSize: document.getElementById('valPointSize'),
+    rangeOpacity: document.getElementById('rangeOpacity'),
+    valOpacity: document.getElementById('valOpacity'),
+    rangeFontSize: document.getElementById('rangeFontSize'),
+    valFontSize: document.getElementById('valFontSize'),
+
+    // 描画エリア
+    chartContainer: document.getElementById('chartContainer'),
+
+    // エクスポート
+    btnSaveSVG: document.getElementById('btnSaveSVG'),
+    btnSavePNG: document.getElementById('btnSavePNG'),
+    btnCopyPNG: document.getElementById('btnCopyPNG'),
+    btnCopySummary: document.getElementById('btnCopySummary'),
+
+    // サマリーエリア
+    summaryContent: document.getElementById('summaryContent'),
+    toast: document.getElementById('toast')
+  };
+
+  // トースト表示関数
+  function showToast(message, type = 'info') {
+    elements.toast.textContent = message;
+    elements.toast.className = `toast show ${type}`;
+    setTimeout(() => {
+      elements.toast.className = 'toast';
+    }, 2800);
+  }
+
+  // ScatterPlot インスタンス生成
+  state.scatterPlot = new ScatterPlot('chartContainer', {
+    width: 960,
+    height: 640
+  });
+
+  // UIの設定値からオプションオブジェクトを構築
+  function getPlotOptions() {
+    return {
+      title: elements.chartTitle.value.trim(),
+      xTitle: elements.xTitle.value.trim(),
+      yTitle: elements.yTitle.value.trim(),
+      theme: elements.selectTheme.value,
+      pointRadius: parseFloat(elements.rangePointSize.value) || 6,
+      pointOpacity: parseFloat(elements.rangeOpacity.value) || 0.75,
+      fontSize: parseFloat(elements.rangeFontSize.value) || 11,
+      showQuadrant: elements.chkQuadrant.checked,
+      quadrantSplitType: elements.quadrantSplitType.value,
+      showQuadrantBg: elements.chkQuadrantBg.checked,
+      quadrantLabels: {
+        q1: elements.q1Label.value.trim(),
+        q2: elements.q2Label.value.trim(),
+        q3: elements.q3Label.value.trim(),
+        q4: elements.q4Label.value.trim()
+      },
+      showLine45: elements.chkLine45.checked,
+      lockAspect1to1: elements.chkAspect1to1.checked,
+      showRegression: elements.chkRegression.checked,
+      showConfidenceInterval: elements.chkConfidence.checked,
+      labelMode: elements.selectLabelMode.value,
+      showLeaderLines: elements.chkLeaderLines.checked
+    };
+  }
+
+  // グラフ再描画
+  function redrawChart() {
+    if (!state.tableData) return;
+
+    const labelKey = elements.selectLabel.value;
+    const xKey = elements.selectX.value;
+    const yKey = elements.selectY.value;
+
+    if (!xKey || !yKey) return;
+
+    const options = getPlotOptions();
+    state.currentStats = state.scatterPlot.render({
+      rows: state.tableData.rows,
+      labelKey,
+      xKey,
+      yKey
+    }, options);
+
+    updateSummaryDisplay(state.currentStats, xKey, yKey);
+  }
+
+  // 統計サマリーのHTML表示更新
+  function updateSummaryDisplay(stats, xKey, yKey) {
+    if (!stats) {
+      elements.summaryContent.innerHTML = '<span class="text-muted">データが読み込まれていません。</span>';
+      return;
+    }
+
+    const reg = stats.regression;
+    const sign = reg.intercept >= 0 ? '+' : '-';
+    const splitName = elements.quadrantSplitType.value === 'median' ? '中央値' : '平均値';
+
+    elements.summaryContent.innerHTML = `
+      <div class="summary-grid">
+        <div class="summary-item">
+          <div class="summary-label">サンプル数</div>
+          <div class="summary-val">${stats.totalCount} 件</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">${splitName} X [${xKey}]</div>
+          <div class="summary-val">${stats.splitX.toFixed(2)}</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">${splitName} Y [${yKey}]</div>
+          <div class="summary-val">${stats.splitY.toFixed(2)}</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">相関係数 (r)</div>
+          <div class="summary-val ${Math.abs(reg.r) > 0.6 ? 'text-primary' : ''}">${reg.r.toFixed(3)}</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">決定係数 (R²)</div>
+          <div class="summary-val font-bold">${reg.r2.toFixed(3)}</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">1次回帰式</div>
+          <div class="summary-val text-mono">y = ${reg.slope.toFixed(3)}x ${sign} ${Math.abs(reg.intercept).toFixed(2)}</div>
+        </div>
+      </div>
+      <div class="quadrant-counts">
+        <span class="q-badge q1">Q1: ${stats.quadrants.q1.length}件</span>
+        <span class="q-badge q2">Q2: ${stats.quadrants.q2.length}件</span>
+        <span class="q-badge q3">Q3: ${stats.quadrants.q3.length}件</span>
+        <span class="q-badge q4">Q4: ${stats.quadrants.q4.length}件</span>
+      </div>
+    `;
+  }
+
+  // テーブルデータ読み込み後の列セレクター初期化
+  function applyTableData(parsedTable, fileName = '') {
+    state.tableData = parsedTable;
+
+    // ファイル情報バッジ表示
+    elements.fileInfo.textContent = `${fileName ? fileName + ' : ' : ''}${parsedTable.totalCount} 行 / ${parsedTable.columns.length} 列`;
+    elements.fileInfo.style.display = 'inline-block';
+
+    // セレクターを更新
+    elements.selectLabel.innerHTML = '';
+    elements.selectX.innerHTML = '';
+    elements.selectY.innerHTML = '';
+
+    parsedTable.columns.forEach(col => {
+      const optL = new Option(col, col);
+      elements.selectLabel.add(optL);
+    });
+
+    // 数値列を優先してX/Yの選択肢に設定
+    parsedTable.columns.forEach(col => {
+      const isNum = parsedTable.numericColumns.includes(col);
+      const labelText = isNum ? `${col} (数値)` : col;
+      
+      const optX = new Option(labelText, col);
+      const optY = new Option(labelText, col);
+      elements.selectX.add(optX);
+      elements.selectY.add(optY);
+    });
+
+    // デフォルト選択
+    elements.selectLabel.value = parsedTable.labelColumn;
+    elements.selectX.value = parsedTable.defaultX;
+    elements.selectY.value = parsedTable.defaultY;
+
+    // 軸タイトルの初期設定
+    elements.xTitle.value = parsedTable.defaultX;
+    elements.yTitle.value = parsedTable.defaultY;
+    elements.chartTitle.value = `${parsedTable.defaultY} vs ${parsedTable.defaultX}`;
+
+    showToast(`データを読み込みました (${parsedTable.totalCount}件)`, 'success');
+    redrawChart();
+  }
+
+  // サンプルデータの読み込み
+  async function loadSampleData() {
+    try {
+      const res = await fetch('data/sample_retail.csv');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const text = await res.text();
+      const table = DataParser.parseCSVText(text);
+      applyTableData(table, 'sample_retail.csv');
+    } catch (err) {
+      console.error(err);
+      showToast(`サンプルデータの読込に失敗しました: ${err.message}`, 'error');
+    }
+  }
+
+  // クリップボードからの貼り付け解析
+  async function pasteFromClipboard() {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!text || text.trim() === '') {
+        showToast('クリップボードにテキストがありません。', 'warning');
+        return;
+      }
+      const table = DataParser.parseCSVText(text);
+      applyTableData(table, 'クリップボード');
+    } catch (err) {
+      showToast(`貼り付けに失敗しました: ${err.message}`, 'error');
+    }
+  }
+
+  // ファイル読み込みハンドラ
+  async function handleFiles(files) {
+    if (!files || files.length === 0) return;
+    const file = files[0];
+    try {
+      const table = await DataParser.parseFile(file);
+      applyTableData(table, file.name);
+    } catch (err) {
+      console.error(err);
+      showToast(`ファイルの読み込みに失敗しました: ${err.message}`, 'error');
+    }
+  }
+
+  // ドラッグ＆ドロップ設定
+  elements.dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    elements.dropZone.classList.add('drag-over');
+  });
+
+  elements.dropZone.addEventListener('dragleave', () => {
+    elements.dropZone.classList.remove('drag-over');
+  });
+
+  elements.dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    elements.dropZone.classList.remove('drag-over');
+    if (e.dataTransfer && e.dataTransfer.files.length > 0) {
+      handleFiles(e.dataTransfer.files);
+    }
+  });
+
+  elements.dropZone.addEventListener('click', () => {
+    elements.fileInput.click();
+  });
+
+  elements.fileInput.addEventListener('change', (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      handleFiles(e.target.files);
+    }
+  });
+
+  // ショートカット: 画面全体へのペースト (Ctrl+V)
+  window.addEventListener('paste', (e) => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    const text = (e.clipboardData || window.clipboardData).getData('text');
+    if (text && text.trim()) {
+      try {
+        const table = DataParser.parseCSVText(text);
+        applyTableData(table, '貼り付けデータ');
+      } catch (err) {
+        // パース失敗は静かに無視
+      }
+    }
+  });
+
+  elements.btnSample.addEventListener('click', loadSampleData);
+  elements.btnPaste.addEventListener('click', pasteFromClipboard);
+
+  // 列選択変更イベント
+  elements.selectLabel.addEventListener('change', redrawChart);
+  elements.selectX.addEventListener('change', () => {
+    elements.xTitle.value = elements.selectX.value;
+    elements.chartTitle.value = `${elements.selectY.value} vs ${elements.selectX.value}`;
+    redrawChart();
+  });
+  elements.selectY.addEventListener('change', () => {
+    elements.yTitle.value = elements.selectY.value;
+    elements.chartTitle.value = `${elements.selectY.value} vs ${elements.selectX.value}`;
+    redrawChart();
+  });
+
+  // タイトル入力変更イベント
+  [elements.chartTitle, elements.xTitle, elements.yTitle].forEach(input => {
+    input.addEventListener('input', redrawChart);
+  });
+
+  // 補助線チェックボックス・設定変更
+  [
+    elements.chkQuadrant,
+    elements.quadrantSplitType,
+    elements.chkQuadrantBg,
+    elements.chkLine45,
+    elements.chkAspect1to1,
+    elements.chkRegression,
+    elements.chkConfidence,
+    elements.selectLabelMode,
+    elements.chkLeaderLines,
+    elements.selectTheme
+  ].forEach(ctrl => {
+    ctrl.addEventListener('change', redrawChart);
+  });
+
+  [elements.q1Label, elements.q2Label, elements.q3Label, elements.q4Label].forEach(input => {
+    input.addEventListener('input', redrawChart);
+  });
+
+  // スライダー変更イベント
+  elements.rangePointSize.addEventListener('input', (e) => {
+    elements.valPointSize.textContent = `${e.target.value}px`;
+    redrawChart();
+  });
+
+  elements.rangeOpacity.addEventListener('input', (e) => {
+    elements.valOpacity.textContent = `${Math.round(e.target.value * 100)}%`;
+    redrawChart();
+  });
+
+  elements.rangeFontSize.addEventListener('input', (e) => {
+    elements.valFontSize.textContent = `${e.target.value}px`;
+    redrawChart();
+  });
+
+  // ラベル位置手動移動のリセット
+  elements.btnResetLabels.addEventListener('click', () => {
+    if (state.scatterPlot) {
+      state.scatterPlot.layoutEngine.resetManualPositions();
+      redrawChart();
+      showToast('ラベル位置の調整をリセットしました', 'info');
+    }
+  });
+
+  // エクスポート: SVGダウンロード
+  elements.btnSaveSVG.addEventListener('click', () => {
+    if (!state.scatterPlot) return;
+    const title = elements.chartTitle.value.trim() || 'scatter_plot';
+    state.scatterPlot.downloadSVG(`${title}.svg`);
+    showToast('SVG形式で保存しました (ベクター画像)', 'success');
+  });
+
+  // エクスポート: PNGダウンロード
+  elements.btnSavePNG.addEventListener('click', () => {
+    if (!state.scatterPlot) return;
+    const title = elements.chartTitle.value.trim() || 'scatter_plot';
+    state.scatterPlot.downloadPNG(`${title}.png`, 2); // 2倍解像度
+    showToast('高解像度PNG形式で保存しました', 'success');
+  });
+
+  // エクスポート: 画像をクリップボードにコピー
+  elements.btnCopyPNG.addEventListener('click', async () => {
+    if (!state.scatterPlot) return;
+    try {
+      await state.scatterPlot.copyPNGToClipboard(2);
+      showToast('グラフ画像をクリップボードにコピーしました！そのまま貼り付けできます', 'success');
+    } catch (err) {
+      showToast(`コピーに失敗しました: ${err.message}`, 'error');
+    }
+  });
+
+  // エクスポート: 集計サマリーのテキストコピー
+  elements.btnCopySummary.addEventListener('click', async () => {
+    if (!state.currentStats) {
+      showToast('データがありません', 'warning');
+      return;
+    }
+    const s = state.currentStats;
+    const reg = s.regression;
+    const xKey = elements.selectX.value;
+    const yKey = elements.selectY.value;
+    const sign = reg.intercept >= 0 ? '+' : '-';
+
+    let text = `【散布図集計サマリー】\n`;
+    text += `タイトル: ${elements.chartTitle.value}\n`;
+    text += `X軸: ${xKey} / Y軸: ${yKey}\n`;
+    text += `サンプル数: ${s.totalCount}\n`;
+    text += `X軸: 平均=${s.meanX.toFixed(2)}, 中央値=${s.medianX.toFixed(2)}, 標準偏差=${s.stdX.toFixed(2)}\n`;
+    text += `Y軸: 平均=${s.meanY.toFixed(2)}, 中央値=${s.medianY.toFixed(2)}, 標準偏差=${s.stdY.toFixed(2)}\n`;
+    text += `相関係数 (r): ${reg.r.toFixed(4)}\n`;
+    text += `決定係数 (R²): ${reg.r2.toFixed(4)}\n`;
+    text += `1次回帰式: y = ${reg.slope.toFixed(4)}x ${sign} ${Math.abs(reg.intercept).toFixed(4)}\n\n`;
+
+    text += `【第1象限 (${elements.q1Label.value})】 ${s.quadrants.q1.length}件: `;
+    text += s.quadrants.q1.map(r => r._name).join(', ') + '\n';
+    text += `【第2象限 (${elements.q2Label.value})】 ${s.quadrants.q2.length}件: `;
+    text += s.quadrants.q2.map(r => r._name).join(', ') + '\n';
+    text += `【第3象限 (${elements.q3Label.value})】 ${s.quadrants.q3.length}件: `;
+    text += s.quadrants.q3.map(r => r._name).join(', ') + '\n';
+    text += `【第4象限 (${elements.q4Label.value})】 ${s.quadrants.q4.length}件: `;
+    text += s.quadrants.q4.map(r => r._name).join(', ') + '\n';
+
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast('集計サマリーテキストをコピーしました', 'success');
+    } catch (err) {
+      showToast(`コピーに失敗しました: ${err.message}`, 'error');
+    }
+  });
+
+  // 初回起動: サンプルデータを自動読み込み
+  loadSampleData();
+});
