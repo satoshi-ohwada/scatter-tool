@@ -20,6 +20,7 @@ class ScatterPlot {
       showQuadrant: true,
       quadrantSplitType: 'mean', // 'mean' or 'median'
       showQuadrantBg: true,
+      colorPointsByQuadrant: false,
       quadrantLabels: {
         q1: '第1象限 (高X・高Y)',
         q2: '第2象限 (低X・高Y)',
@@ -63,7 +64,8 @@ class ScatterPlot {
         regBand: 'rgba(220, 38, 38, 0.12)',
         line45: '#059669',
         quadrantLine: '#94a3b8',
-        quadrantBg: ['#e0f2fe', '#dcfce7', '#f1f5f9', '#ffedd5'], // Q1(青), Q2(緑), Q3(グレー), Q4(橙)
+        quadrantBg: ['#e0f2fe', '#dcfce7', '#ede9fe', '#ffedd5'], // Q1(青:sky), Q2(緑:emerald), Q3(紫:purple), Q4(橙:amber)
+        quadrantFg: ['#0284c7', '#16a34a', '#7c3aed', '#ea580c'], // Q1(青), Q2(緑), Q3(紫), Q4(橙)
         leaderLine: '#64748b',
         labelBg: 'rgba(255, 255, 255, 0.92)',
         labelBorder: '#cbd5e1',
@@ -81,7 +83,8 @@ class ScatterPlot {
         regBand: 'rgba(225, 29, 72, 0.12)',
         line45: '#2563eb',
         quadrantLine: '#5eead4',
-        quadrantBg: ['#ccfbf1', '#dbeafe', '#f0fdf4', '#fef3c7'],
+        quadrantBg: ['#ccfbf1', '#dbeafe', '#ede9fe', '#fef3c7'],
+        quadrantFg: ['#0d9488', '#2563eb', '#7c3aed', '#d97706'],
         leaderLine: '#14b8a6',
         labelBg: 'rgba(255, 255, 255, 0.92)',
         labelBorder: '#99f6e4',
@@ -99,7 +102,8 @@ class ScatterPlot {
         regBand: 'rgba(234, 88, 12, 0.12)',
         line45: '#0284c7',
         quadrantLine: '#d8b4fe',
-        quadrantBg: ['#e0e7ff', '#fce7f3', '#f3e8ff', '#fef3c7'],
+        quadrantBg: ['#e0e7ff', '#dcfce7', '#f3e8ff', '#ffedd5'],
+        quadrantFg: ['#4338ca', '#15803d', '#7e22ce', '#c2410c'],
         leaderLine: '#a855f7',
         labelBg: 'rgba(255, 255, 255, 0.92)',
         labelBorder: '#e9d5ff',
@@ -117,7 +121,8 @@ class ScatterPlot {
         regBand: 'rgba(0, 0, 0, 0.08)',
         line45: '#737373',
         quadrantLine: '#a3a3a3',
-        quadrantBg: ['#fafafa', '#f5f5f5', '#fafafa', '#f5f5f5'],
+        quadrantBg: ['#f8fafc', '#f1f5f9', '#ede9fe', '#ffedd5'],
+        quadrantFg: ['#334155', '#475569', '#7c3aed', '#c2410c'],
         leaderLine: '#525252',
         labelBg: 'rgba(255, 255, 255, 0.95)',
         labelBorder: '#a3a3a3',
@@ -450,7 +455,7 @@ class ScatterPlot {
           r.setAttribute("width", q.w);
           r.setAttribute("height", q.h);
           r.setAttribute("fill", q.fill);
-          r.setAttribute("opacity", "0.88");
+          r.setAttribute("opacity", "0.95");
           svg.appendChild(r);
         }
       });
@@ -691,7 +696,7 @@ class ScatterPlot {
 
       // 4象限の名称ラベル
       const qLabels = this.options.quadrantLabels;
-      const qTextColors = ['#0369a1', '#15803d', '#475569', '#c2410c']; // Q1(青), Q2(緑), Q3(グレー), Q4(橙)
+      const qTextColors = theme.quadrantFg || ['#0284c7', '#16a34a', '#7c3aed', '#ea580c']; // Q1(青), Q2(緑), Q3(紫), Q4(橙)
       const cornerOffsets = [
         { label: qLabels.q1, x: margin.left + plotW - 12, y: margin.top + 20, anchor: 'end', color: qTextColors[0] },
         { label: qLabels.q2, x: margin.left + 12, y: margin.top + 20, anchor: 'start', color: qTextColors[1] },
@@ -708,7 +713,11 @@ class ScatterPlot {
           t.setAttribute("fill", co.color);
           t.setAttribute("font-size", "11");
           t.setAttribute("font-weight", "bold");
-          t.setAttribute("opacity", "0.9");
+          t.setAttribute("opacity", "0.95");
+          t.setAttribute("stroke", "rgba(255, 255, 255, 0.95)");
+          t.setAttribute("stroke-width", "3");
+          t.setAttribute("paint-order", "stroke fill");
+          t.setAttribute("stroke-linejoin", "round");
           t.textContent = co.label;
           svg.appendChild(t);
         }
@@ -775,7 +784,23 @@ class ScatterPlot {
       const isHl = !!p.isHighlighted;
       const baseR = isHl ? this.options.pointRadius + 2.5 : this.options.pointRadius;
       circle.setAttribute("r", baseR);
-      circle.setAttribute("fill", isHl ? "#ea580c" : theme.pointFill);
+
+      let pColor = theme.pointFill;
+      if (isHl) {
+        pColor = "#ea580c";
+      } else if (this.options.colorPointsByQuadrant && this.options.showQuadrant) {
+        const qFg = theme.quadrantFg || ['#0284c7', '#16a34a', '#7c3aed', '#ea580c'];
+        if (p.x >= splitX && p.y >= splitY) {
+          pColor = qFg[0]; // Q1
+        } else if (p.x < splitX && p.y >= splitY) {
+          pColor = qFg[1]; // Q2
+        } else if (p.x < splitX && p.y < splitY) {
+          pColor = qFg[2]; // Q3
+        } else {
+          pColor = qFg[3]; // Q4
+        }
+      }
+      circle.setAttribute("fill", pColor);
       circle.setAttribute("stroke", isHl ? "#ffffff" : theme.pointStroke);
       circle.setAttribute("stroke-width", isHl ? "2" : "1.5");
       circle.setAttribute("fill-opacity", isHl ? "1" : this.options.pointOpacity);

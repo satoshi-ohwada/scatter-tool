@@ -34,6 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
     chkQuadrant: document.getElementById('chkQuadrant'),
     quadrantSplitType: document.getElementById('quadrantSplitType'),
     chkQuadrantBg: document.getElementById('chkQuadrantBg'),
+    chkQuadrantColorPoints: document.getElementById('chkQuadrantColorPoints'),
     chkLine45: document.getElementById('chkLine45'),
     chkAspect1to1: document.getElementById('chkAspect1to1'),
     chkRegression: document.getElementById('chkRegression'),
@@ -101,7 +102,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // サマリーホバーウィジェット
     summaryHoverWidget: document.getElementById('summaryHoverWidget'),
     summaryHoverTrigger: document.getElementById('summaryHoverTrigger'),
-    summaryBadgeMini: document.getElementById('summaryBadgeMini'),
     summaryContent: document.getElementById('summaryContent'),
     toast: document.getElementById('toast')
   };
@@ -144,6 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
       showQuadrant: elements.chkQuadrant.checked,
       quadrantSplitType: elements.quadrantSplitType.value,
       showQuadrantBg: elements.chkQuadrantBg.checked,
+      colorPointsByQuadrant: elements.chkQuadrantColorPoints ? elements.chkQuadrantColorPoints.checked : false,
       quadrantLabels: {
         q1: elements.q1Label.value.trim(),
         q2: elements.q2Label.value.trim(),
@@ -196,19 +197,12 @@ document.addEventListener('DOMContentLoaded', () => {
       if (elements.summaryContent) {
         elements.summaryContent.innerHTML = '<span class="text-muted">データが読み込まれていません。</span>';
       }
-      if (elements.summaryBadgeMini) {
-        elements.summaryBadgeMini.textContent = 'R²=--';
-      }
       return;
     }
 
     const reg = stats.regression;
     const sign = reg.intercept >= 0 ? '+' : '-';
     const splitName = elements.quadrantSplitType.value === 'median' ? '中央値' : '平均値';
-
-    if (elements.summaryBadgeMini) {
-      elements.summaryBadgeMini.textContent = `R²=${reg.r2.toFixed(3)}`;
-    }
 
     if (elements.summaryContent) {
       elements.summaryContent.innerHTML = `
@@ -482,6 +476,7 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.chkQuadrant,
     elements.quadrantSplitType,
     elements.chkQuadrantBg,
+    elements.chkQuadrantColorPoints,
     elements.chkLine45,
     elements.chkAspect1to1,
     elements.chkRegression,
