@@ -64,8 +64,8 @@ class ScatterPlot {
         regBand: 'rgba(220, 38, 38, 0.12)',
         line45: '#059669',
         quadrantLine: '#94a3b8',
-        quadrantBg: ['#e0f2fe', '#dcfce7', '#ede9fe', '#ffedd5'], // Q1(青:sky), Q2(緑:emerald), Q3(紫:purple), Q4(橙:amber)
-        quadrantFg: ['#0284c7', '#16a34a', '#7c3aed', '#ea580c'], // Q1(青), Q2(緑), Q3(紫), Q4(橙)
+        quadrantBg: ['#bae6fd', '#bbf7d0', '#ddd6fe', '#fed7aa'], // Q1(青:sky-200), Q2(緑:green-200), Q3(紫:purple-200), Q4(橙:orange-200)
+        quadrantFg: ['#0284c7', '#15803d', '#7e22ce', '#c2410c'], // Q1(青), Q2(緑), Q3(紫), Q4(橙)
         leaderLine: '#64748b',
         labelBg: 'rgba(255, 255, 255, 0.92)',
         labelBorder: '#cbd5e1',
@@ -83,8 +83,8 @@ class ScatterPlot {
         regBand: 'rgba(225, 29, 72, 0.12)',
         line45: '#2563eb',
         quadrantLine: '#5eead4',
-        quadrantBg: ['#ccfbf1', '#dbeafe', '#ede9fe', '#fef3c7'],
-        quadrantFg: ['#0d9488', '#2563eb', '#7c3aed', '#d97706'],
+        quadrantBg: ['#99f6e4', '#bbf7d0', '#c7d2fe', '#fde68a'],
+        quadrantFg: ['#0f766e', '#15803d', '#4338ca', '#b45309'],
         leaderLine: '#14b8a6',
         labelBg: 'rgba(255, 255, 255, 0.92)',
         labelBorder: '#99f6e4',
@@ -102,8 +102,8 @@ class ScatterPlot {
         regBand: 'rgba(234, 88, 12, 0.12)',
         line45: '#0284c7',
         quadrantLine: '#d8b4fe',
-        quadrantBg: ['#e0e7ff', '#dcfce7', '#f3e8ff', '#ffedd5'],
-        quadrantFg: ['#4338ca', '#15803d', '#7e22ce', '#c2410c'],
+        quadrantBg: ['#c7d2fe', '#bbf7d0', '#e9d5ff', '#fed7aa'],
+        quadrantFg: ['#3730a3', '#166534', '#6b21a8', '#c2410c'],
         leaderLine: '#a855f7',
         labelBg: 'rgba(255, 255, 255, 0.92)',
         labelBorder: '#e9d5ff',
@@ -121,8 +121,8 @@ class ScatterPlot {
         regBand: 'rgba(0, 0, 0, 0.08)',
         line45: '#737373',
         quadrantLine: '#a3a3a3',
-        quadrantBg: ['#f8fafc', '#f1f5f9', '#ede9fe', '#ffedd5'],
-        quadrantFg: ['#334155', '#475569', '#7c3aed', '#c2410c'],
+        quadrantBg: ['#cbd5e1', '#e2e8f0', '#94a3b8', '#f1f5f9'],
+        quadrantFg: ['#1e293b', '#334155', '#0f172a', '#475569'],
         leaderLine: '#525252',
         labelBg: 'rgba(255, 255, 255, 0.95)',
         labelBorder: '#a3a3a3',
@@ -438,24 +438,25 @@ class ScatterPlot {
 
       const quadrants = [
         // Q1 (右上)
-        { x: boundedSplitX, y: margin.top, w: margin.left + plotW - boundedSplitX, h: boundedSplitY - margin.top, fill: theme.quadrantBg[0] },
+        { id: 'q1', x: boundedSplitX, y: margin.top, w: margin.left + plotW - boundedSplitX, h: boundedSplitY - margin.top, fill: theme.quadrantBg[0] },
         // Q2 (左上)
-        { x: margin.left, y: margin.top, w: boundedSplitX - margin.left, h: boundedSplitY - margin.top, fill: theme.quadrantBg[1] },
+        { id: 'q2', x: margin.left, y: margin.top, w: boundedSplitX - margin.left, h: boundedSplitY - margin.top, fill: theme.quadrantBg[1] },
         // Q3 (左下)
-        { x: margin.left, y: boundedSplitY, w: boundedSplitX - margin.left, h: margin.top + plotH - boundedSplitY, fill: theme.quadrantBg[2] },
+        { id: 'q3', x: margin.left, y: boundedSplitY, w: boundedSplitX - margin.left, h: margin.top + plotH - boundedSplitY, fill: theme.quadrantBg[2] },
         // Q4 (右下)
-        { x: boundedSplitX, y: boundedSplitY, w: margin.left + plotW - boundedSplitX, h: margin.top + plotH - boundedSplitY, fill: theme.quadrantBg[3] }
+        { id: 'q4', x: boundedSplitX, y: boundedSplitY, w: margin.left + plotW - boundedSplitX, h: margin.top + plotH - boundedSplitY, fill: theme.quadrantBg[3] }
       ];
 
       quadrants.forEach(q => {
         if (q.w > 0 && q.h > 0) {
           const r = document.createElementNS(svgNS, "rect");
+          r.setAttribute("class", `quadrant-rect quadrant-${q.id}`);
           r.setAttribute("x", q.x);
           r.setAttribute("y", q.y);
           r.setAttribute("width", q.w);
           r.setAttribute("height", q.h);
           r.setAttribute("fill", q.fill);
-          r.setAttribute("opacity", "0.95");
+          r.setAttribute("opacity", "0.85");
           svg.appendChild(r);
         }
       });
