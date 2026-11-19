@@ -83,7 +83,10 @@ document.addEventListener('DOMContentLoaded', () => {
     dataTableHead: document.getElementById('dataTableHead'),
     dataTableBody: document.getElementById('dataTableBody'),
 
-    // サマリーエリア
+    // サマリーホバーウィジェット
+    summaryHoverWidget: document.getElementById('summaryHoverWidget'),
+    summaryHoverTrigger: document.getElementById('summaryHoverTrigger'),
+    summaryBadgeMini: document.getElementById('summaryBadgeMini'),
     summaryContent: document.getElementById('summaryContent'),
     toast: document.getElementById('toast')
   };
@@ -153,10 +156,15 @@ document.addEventListener('DOMContentLoaded', () => {
     updateSummaryDisplay(state.currentStats, xKey, yKey);
   }
 
-  // 統計サマリーのHTML表示更新
+  // 統計サマリーのHTML表示更新 (右下ホバーウィジェット)
   function updateSummaryDisplay(stats, xKey, yKey) {
     if (!stats) {
-      elements.summaryContent.innerHTML = '<span class="text-muted">データが読み込まれていません。</span>';
+      if (elements.summaryContent) {
+        elements.summaryContent.innerHTML = '<span class="text-muted">データが読み込まれていません。</span>';
+      }
+      if (elements.summaryBadgeMini) {
+        elements.summaryBadgeMini.textContent = 'R²=--';
+      }
       return;
     }
 
@@ -164,40 +172,46 @@ document.addEventListener('DOMContentLoaded', () => {
     const sign = reg.intercept >= 0 ? '+' : '-';
     const splitName = elements.quadrantSplitType.value === 'median' ? '中央値' : '平均値';
 
-    elements.summaryContent.innerHTML = `
-      <div class="summary-grid">
-        <div class="summary-item">
-          <span class="summary-label">サンプル数:</span>
-          <span class="summary-val">${stats.totalCount}件</span>
+    if (elements.summaryBadgeMini) {
+      elements.summaryBadgeMini.textContent = `R²=${reg.r2.toFixed(3)}`;
+    }
+
+    if (elements.summaryContent) {
+      elements.summaryContent.innerHTML = `
+        <div class="summary-grid">
+          <div class="summary-item">
+            <span class="summary-label">サンプル数:</span>
+            <span class="summary-val">${stats.totalCount}件</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">相関 (r):</span>
+            <span class="summary-val ${Math.abs(reg.r) > 0.6 ? 'text-primary' : ''}">${reg.r.toFixed(3)}</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">${splitName}X:</span>
+            <span class="summary-val">${stats.splitX.toFixed(1)}</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">決定係数 (R²):</span>
+            <span class="summary-val font-bold">${reg.r2.toFixed(3)}</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">${splitName}Y:</span>
+            <span class="summary-val">${stats.splitY.toFixed(1)}</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">回帰式:</span>
+            <span class="summary-val text-mono">y=${reg.slope.toFixed(2)}x${sign}${Math.abs(reg.intercept).toFixed(2)}</span>
+          </div>
         </div>
-        <div class="summary-item">
-          <span class="summary-label">${splitName}X:</span>
-          <span class="summary-val">${stats.splitX.toFixed(1)}</span>
+        <div class="quadrant-counts">
+          <span class="q-badge q1">Q1: ${stats.quadrants.q1.length}件</span>
+          <span class="q-badge q2">Q2: ${stats.quadrants.q2.length}件</span>
+          <span class="q-badge q3">Q3: ${stats.quadrants.q3.length}件</span>
+          <span class="q-badge q4">Q4: ${stats.quadrants.q4.length}件</span>
         </div>
-        <div class="summary-item">
-          <span class="summary-label">${splitName}Y:</span>
-          <span class="summary-val">${stats.splitY.toFixed(1)}</span>
-        </div>
-        <div class="summary-item">
-          <span class="summary-label">相関 (r):</span>
-          <span class="summary-val ${Math.abs(reg.r) > 0.6 ? 'text-primary' : ''}">${reg.r.toFixed(3)}</span>
-        </div>
-        <div class="summary-item">
-          <span class="summary-label">決定係数 (R²):</span>
-          <span class="summary-val font-bold">${reg.r2.toFixed(3)}</span>
-        </div>
-        <div class="summary-item">
-          <span class="summary-label">回帰式:</span>
-          <span class="summary-val text-mono">y = ${reg.slope.toFixed(2)}x ${sign} ${Math.abs(reg.intercept).toFixed(2)}</span>
-        </div>
-      </div>
-      <div class="quadrant-counts">
-        <span class="q-badge q1">Q1: ${stats.quadrants.q1.length}件</span>
-        <span class="q-badge q2">Q2: ${stats.quadrants.q2.length}件</span>
-        <span class="q-badge q3">Q3: ${stats.quadrants.q3.length}件</span>
-        <span class="q-badge q4">Q4: ${stats.quadrants.q4.length}件</span>
-      </div>
-    `;
+      `;
+    }
   }
 
   // テーブルデータ読み込み後の列セレクター初期化
@@ -476,7 +490,8 @@ document.addEventListener('DOMContentLoaded', () => {
   if (elements.btnCopyPNG) elements.btnCopyPNG.addEventListener('click', handleCopyPNG);
 
   // エクスポート: 集計サマリーのテキストコピー
-  elements.btnCopySummary.addEventListener('click', async () => {
+  elements.btnCopySummary.addEventListener('click', async (e) => {
+    e.stopPropagation();
     if (!state.currentStats) {
       showToast('データがありません', 'warning');
       return;
@@ -513,6 +528,20 @@ document.addEventListener('DOMContentLoaded', () => {
       showToast(`コピーに失敗しました: ${err.message}`, 'error');
     }
   });
+
+  // サマリーホバーウィジェットのクリック固定/解除トグル
+  if (elements.summaryHoverTrigger && elements.summaryHoverWidget) {
+    elements.summaryHoverTrigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      elements.summaryHoverWidget.classList.toggle('is-open');
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!elements.summaryHoverWidget.contains(e.target)) {
+        elements.summaryHoverWidget.classList.remove('is-open');
+      }
+    });
+  }
 
   // サイドバーの開閉 (折りたたみによるグラフ拡大)
   if (elements.btnToggleSidebar && elements.sidebar) {

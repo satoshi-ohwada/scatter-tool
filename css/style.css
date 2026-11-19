@@ -322,13 +322,12 @@ body {
   width: 100%;
 }
 
-/* メインコンテンツ (グラフ表示エリア) */
+/* メインコンテンツ (作図領域を最大化) */
 .main-content {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 8px 12px;
-  gap: 6px;
+  padding: 6px 10px;
   overflow: hidden;
   background-color: #f8fafc;
 }
@@ -436,41 +435,138 @@ body {
   text-align: center;
 }
 
-/* サマリーバー (フッターカード - 小さめノートPC対応スリムスタイル) */
-.summary-card {
-  background-color: #ffffff;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius);
-  padding: 6px 12px;
-  box-shadow: var(--shadow-sm);
+/* 右下ホバー表示サマリーウィジェット (作図領域最大化 & 指定時ホバー表示) */
+.summary-hover-widget {
+  position: absolute;
+  right: 12px;
+  bottom: 10px;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+/* ホバー/指定時に展開するポップオーバーカード */
+.summary-hover-popover {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  width: 330px;
+  max-width: calc(100vw - 32px);
+  background-color: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(10px);
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  box-shadow: 0 12px 28px -4px rgba(0, 0, 0, 0.15), 0 4px 10px -2px rgba(0, 0, 0, 0.08);
+  padding: 10px 12px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(6px) scale(0.97);
+  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.2s;
+  pointer-events: none;
+}
+
+/* ホバー時 または クリック固定(.is-open)時に表示 */
+.summary-hover-widget:hover .summary-hover-popover,
+.summary-hover-widget.is-open .summary-hover-popover {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.summary-popover-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  flex-shrink: 0;
-  min-height: 36px;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 6px;
+  margin-bottom: 8px;
+}
+
+.summary-popover-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* 右下トリガーボタン */
+.summary-hover-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 18px;
+  background-color: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(6px);
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  transition: all 0.15s ease;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.summary-hover-trigger:hover,
+.summary-hover-widget.is-open .summary-hover-trigger {
+  background-color: #ffffff;
+  border-color: #94a3b8;
+  color: var(--primary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.summary-trigger-icon {
+  font-size: 13px;
+}
+
+.summary-trigger-label {
+  font-size: 11px;
+}
+
+.summary-trigger-badge {
+  font-family: monospace;
+  font-size: 10px;
+  background-color: #f1f5f9;
+  color: #334155;
+  padding: 1px 6px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  font-weight: 700;
+}
+
+.btn-xs {
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 4px;
 }
 
 .summary-content {
-  flex: 1;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .summary-grid {
-  display: flex;
-  gap: 12px;
-  align-items: baseline;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 10px;
 }
 
 .summary-item {
-  display: inline-flex;
+  display: flex;
   align-items: baseline;
   gap: 4px;
+}
+
+.summary-item-full {
+  grid-column: span 2;
 }
 
 .summary-label {
@@ -481,7 +577,7 @@ body {
 }
 
 .summary-val {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   color: var(--text-main);
   white-space: nowrap;
@@ -489,8 +585,9 @@ body {
 
 .quadrant-counts {
   display: flex;
-  gap: 6px;
-  margin-top: 0;
+  gap: 5px;
+  margin-top: 4px;
+  flex-wrap: wrap;
   align-items: center;
 }
 

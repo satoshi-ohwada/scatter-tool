@@ -250,17 +250,28 @@
         </div>
         <div class="chart-wrapper">
           <div id="chartContainer" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;"></div>
-        </div>
-      </div>
 
-      <!-- サマリーバー -->
-      <div class="summary-card">
-        <div id="summaryContent" class="summary-content">
-          <span class="text-muted">データ計算中...</span>
+          <!-- 画面右下のホバー表示サマリーウィジェット (指定時のみホバー展開で作図領域を最大化) -->
+          <div class="summary-hover-widget" id="summaryHoverWidget">
+            <div class="summary-hover-popover" id="summaryPopover">
+              <div class="summary-popover-header">
+                <span class="summary-popover-title">📊 統計サマリー</span>
+                <button id="btnCopySummary" class="btn btn-xs" title="統計値と各象限のアイテム一覧をクリップボードにコピー">
+                  📋 コピー
+                </button>
+              </div>
+              <div id="summaryContent" class="summary-content">
+                <span class="text-muted">データ計算中...</span>
+              </div>
+            </div>
+
+            <button class="summary-hover-trigger" id="summaryHoverTrigger" title="マウスホバーまたはクリックで統計サマリーを展開表示します">
+              <span class="summary-trigger-icon">📊</span>
+              <span class="summary-trigger-label">サマリー</span>
+              <span id="summaryBadgeMini" class="summary-trigger-badge">R²=--</span>
+            </button>
+          </div>
         </div>
-        <button id="btnCopySummary" class="btn btn-sm" title="統計値と各象限のアイテム一覧をクリップボードにコピー">
-          📋 サマリーコピー
-        </button>
       </div>
 
     </main>
