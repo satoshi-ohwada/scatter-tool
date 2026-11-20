@@ -61,13 +61,15 @@ class ScatterPlot {
         pointFill: '#2563eb',
         pointStroke: '#ffffff',
         regLine: '#dc2626',
-        regBand: 'rgba(220, 38, 38, 0.12)',
+        regBand: '#dc2626',
+        regBandOpacity: '0.12',
         line45: '#059669',
         quadrantLine: '#94a3b8',
         quadrantBg: ['#bae6fd', '#fef08a', '#e7e5e4', '#fed7aa'], // CUD完全準拠(緑不使用): Q1(青:sky-200), Q2(黄:yellow-200), Q3(灰:stone-200), Q4(橙:orange-200)
         quadrantFg: ['#005aff', '#b45309', '#44403c', '#c2410c'], // CUD・高コントラスト: Q1(青), Q2(黄/アンバー), Q3(石灰/チャコール), Q4(橙)
         leaderLine: '#64748b',
-        labelBg: 'rgba(255, 255, 255, 0.92)',
+        labelBg: '#ffffff',
+        labelBgOpacity: '0.95',
         labelBorder: '#cbd5e1',
         labelText: '#0f172a'
       },
@@ -80,13 +82,15 @@ class ScatterPlot {
         pointFill: '#0d9488',
         pointStroke: '#ffffff',
         regLine: '#e11d48',
-        regBand: 'rgba(225, 29, 72, 0.12)',
+        regBand: '#e11d48',
+        regBandOpacity: '0.12',
         line45: '#2563eb',
         quadrantLine: '#5eead4',
         quadrantBg: ['#bae6fd', '#fef08a', '#e7e5e4', '#fed7aa'],
         quadrantFg: ['#005aff', '#b45309', '#44403c', '#c2410c'],
         leaderLine: '#14b8a6',
-        labelBg: 'rgba(255, 255, 255, 0.92)',
+        labelBg: '#ffffff',
+        labelBgOpacity: '0.95',
         labelBorder: '#99f6e4',
         labelText: '#042f2e'
       },
@@ -99,13 +103,15 @@ class ScatterPlot {
         pointFill: '#9333ea',
         pointStroke: '#ffffff',
         regLine: '#ea580c',
-        regBand: 'rgba(234, 88, 12, 0.12)',
+        regBand: '#ea580c',
+        regBandOpacity: '0.12',
         line45: '#0284c7',
         quadrantLine: '#d8b4fe',
         quadrantBg: ['#bae6fd', '#fef08a', '#e7e5e4', '#fed7aa'],
         quadrantFg: ['#005aff', '#b45309', '#44403c', '#c2410c'],
         leaderLine: '#a855f7',
-        labelBg: 'rgba(255, 255, 255, 0.92)',
+        labelBg: '#ffffff',
+        labelBgOpacity: '0.95',
         labelBorder: '#e9d5ff',
         labelText: '#2e1065'
       },
@@ -118,13 +124,15 @@ class ScatterPlot {
         pointFill: '#404040',
         pointStroke: '#ffffff',
         regLine: '#000000',
-        regBand: 'rgba(0, 0, 0, 0.08)',
+        regBand: '#000000',
+        regBandOpacity: '0.08',
         line45: '#737373',
         quadrantLine: '#a3a3a3',
         quadrantBg: ['#cbd5e1', '#fef08a', '#e7e5e4', '#fed7aa'],
         quadrantFg: ['#1e293b', '#b45309', '#44403c', '#c2410c'],
         leaderLine: '#525252',
-        labelBg: 'rgba(255, 255, 255, 0.95)',
+        labelBg: '#ffffff',
+        labelBgOpacity: '0.95',
         labelBorder: '#a3a3a3',
         labelText: '#171717'
       }
@@ -537,7 +545,8 @@ class ScatterPlot {
         if (upperPts.length > 0) {
           const poly = document.createElementNS(svgNS, "polygon");
           poly.setAttribute("points", `${upperPts.join(' ')} ${lowerPts.join(' ')}`);
-          poly.setAttribute("fill", theme.regBand);
+          poly.setAttribute("fill", theme.regBand || '#dc2626');
+          poly.setAttribute("fill-opacity", theme.regBandOpacity !== undefined ? theme.regBandOpacity : '0.12');
           svg.appendChild(poly);
         }
       }
@@ -594,7 +603,8 @@ class ScatterPlot {
         boxBg.setAttribute("width", boxW);
         boxBg.setAttribute("height", boxH);
         boxBg.setAttribute("rx", "11");
-        boxBg.setAttribute("fill", "rgba(255, 255, 255, 0.92)");
+        boxBg.setAttribute("fill", "#ffffff");
+        boxBg.setAttribute("fill-opacity", "0.95");
         boxBg.setAttribute("stroke", "#cbd5e1");
         boxBg.setAttribute("stroke-width", "0.8");
         boxBg.style.filter = "drop-shadow(0 1px 2px rgba(0,0,0,0.06))";
@@ -715,7 +725,8 @@ class ScatterPlot {
           t.setAttribute("font-size", "11");
           t.setAttribute("font-weight", "bold");
           t.setAttribute("opacity", "0.95");
-          t.setAttribute("stroke", "rgba(255, 255, 255, 0.95)");
+          t.setAttribute("stroke", "#ffffff");
+          t.setAttribute("stroke-opacity", "0.95");
           t.setAttribute("stroke-width", "3");
           t.setAttribute("paint-order", "stroke fill");
           t.setAttribute("stroke-linejoin", "round");
@@ -860,7 +871,8 @@ class ScatterPlot {
       rect.setAttribute("width", label.width);
       rect.setAttribute("height", label.height);
       rect.setAttribute("rx", "4");
-      rect.setAttribute("fill", isHl ? "#fff7ed" : theme.labelBg);
+      rect.setAttribute("fill", isHl ? "#fff7ed" : (theme.labelBg || "#ffffff"));
+      rect.setAttribute("fill-opacity", isHl ? "1" : (theme.labelBgOpacity || "0.95"));
       rect.setAttribute("stroke", isHl ? "#ea580c" : (label.userMoved ? theme.regLine : theme.labelBorder));
       rect.setAttribute("stroke-width", isHl ? "2" : (label.userMoved ? "1.5" : "1"));
       if (isHl) {
@@ -1008,6 +1020,20 @@ class ScatterPlot {
     };
   }
 
+  // RGBA文字列をHEXとAlphaに分解するヘルパー (SVG標準互換用)
+  _parseRgba(colorStr) {
+    if (!colorStr || typeof colorStr !== 'string') return null;
+    const m = colorStr.match(/rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*([\d.]+)\s*\)/);
+    if (!m) return null;
+    const r = parseInt(m[1], 10).toString(16).padStart(2, '0');
+    const g = parseInt(m[2], 10).toString(16).padStart(2, '0');
+    const b = parseInt(m[3], 10).toString(16).padStart(2, '0');
+    return {
+      hex: `#${r}${g}${b}`,
+      alpha: m[4]
+    };
+  }
+
   // SVG文字列の取得 (現在の画面サイズ・見たままの形を完全保証)
   getSVGString() {
     if (!this.svg) return null;
@@ -1020,6 +1046,36 @@ class ScatterPlot {
     clone.setAttribute("width", baseW);
     clone.setAttribute("height", baseH);
     clone.setAttribute("viewBox", `0 0 ${baseW} ${baseH}`);
+
+    // SVG 1.1 / 各種グラフィックソフト (Illustrator, Inkscape, PowerPoint, macOS Preview等) 互換性サニタイズ:
+    // 外部ソフトでラベル背景や図形が黒く塗りつぶされる原因 (rgba()の不認識、CSS filterの非解釈) を完全解消
+    const allElements = clone.querySelectorAll('*');
+    allElements.forEach(el => {
+      // 1. CSS filter: drop-shadow の除去 (Illustrator等で黒矩形になるのを防止)
+      if (el.style && el.style.filter) {
+        el.style.filter = '';
+      }
+
+      // 2. fill 属性内の rgba() を SVG 1.1 準拠の hex + fill-opacity に正規化
+      const fill = el.getAttribute('fill');
+      if (fill && fill.startsWith('rgba(')) {
+        const parsed = this._parseRgba(fill);
+        if (parsed) {
+          el.setAttribute('fill', parsed.hex);
+          el.setAttribute('fill-opacity', parsed.alpha);
+        }
+      }
+
+      // 3. stroke 属性内の rgba() を hex + stroke-opacity に正規化
+      const stroke = el.getAttribute('stroke');
+      if (stroke && stroke.startsWith('rgba(')) {
+        const parsed = this._parseRgba(stroke);
+        if (parsed) {
+          el.setAttribute('stroke', parsed.hex);
+          el.setAttribute('stroke-opacity', parsed.alpha);
+        }
+      }
+    });
 
     const serializer = new XMLSerializer();
     return serializer.serializeToString(clone);
