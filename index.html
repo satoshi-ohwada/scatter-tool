@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>散布図作成ツール (QuickScatter)</title>
-  <link rel="stylesheet" href="css/style.css?v=7">
+  <link rel="stylesheet" href="css/style.css?v=8">
 </head>
 <body>
 
@@ -166,6 +166,7 @@
           <label class="form-label" for="selectLabelMode">ラベル表示対象</label>
           <select id="selectLabelMode" class="form-select">
             <option value="all" selected>すべてのプロットを表示</option>
+            <option value="custom">個別指定のみ表示 (データ確認または点クリックで選択)</option>
             <option value="outliers">外れ値のみ表示 (強調)</option>
             <option value="top5">上位5件のみ表示</option>
             <option value="top10">上位10件のみ表示</option>
@@ -317,6 +318,7 @@
           <button id="btnModalSelectAll" class="btn btn-xs" title="すべての行を作図対象にします">☑ 全作図</button>
           <button id="btnModalDeselectAll" class="btn btn-xs" title="すべての行を作図対象から除外します">☐ 全解除</button>
           <span class="action-divider"></span>
+          <button id="btnModalClearLabels" class="btn btn-xs" title="個別に指定したラベル表示をすべてクリアします">🏷️ ラベルクリア</button>
           <button id="btnModalClearHighlight" class="btn btn-xs" title="すべての強調（ハイライト）を解除します">★ 強調クリア</button>
         </div>
       </div>
@@ -362,10 +364,10 @@
   <script src="lib/xlsx.full.min.js"></script>
 
   <!-- アプリケーションモジュール -->
-  <script src="js/stats.js?v=7"></script>
-  <script src="js/parser.js?v=7"></script>
-  <script src="js/label_layout.js?v=7"></script>
-  <script src="js/scatter.js?v=7"></script>
-  <script src="js/app.js?v=7"></script>
+  <script src="js/stats.js?v=8"></script>
+  <script src="js/parser.js?v=8"></script>
+  <script src="js/label_layout.js?v=8"></script>
+  <script src="js/scatter.js?v=8"></script>
+  <script src="js/app.js?v=8"></script>
 </body>
 </html>

@@ -47,12 +47,16 @@ class LabelLayoutEngine {
       let visible = true;
       if (mode === 'none') {
         visible = false;
+      } else if (mode === 'custom') {
+        visible = !!p.isLabeled || !!p.isHighlighted;
       } else if (mode === 'outliers') {
-        visible = !!p.isOutlier;
+        visible = !!p.isOutlier || !!p.isLabeled;
       } else if (mode === 'top5') {
-        visible = p.rankX <= 5 || p.rankY <= 5;
+        visible = (p.rankX <= 5 || p.rankY <= 5) || !!p.isLabeled;
       } else if (mode === 'top10') {
-        visible = p.rankX <= 10 || p.rankY <= 10;
+        visible = (p.rankX <= 10 || p.rankY <= 10) || !!p.isLabeled;
+      } else if (mode === 'all') {
+        visible = true;
       }
       // 強調指定された行はどの表示モードであっても常にラベルを表示
       if (p.isHighlighted) {
@@ -85,6 +89,7 @@ class LabelLayoutEngine {
         height: h,
         userMoved,
         visible,
+        isLabeled: !!p.isLabeled,
         isHighlighted: !!p.isHighlighted
       };
     });

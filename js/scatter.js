@@ -736,6 +736,7 @@ class ScatterPlot {
       isOutlier: r._isOutlier,
       rankX: r._rankX,
       rankY: r._rankY,
+      isLabeled: !!r._labeled,
       isHighlighted: !!r._highlighted
     }));
 
@@ -813,8 +814,15 @@ class ScatterPlot {
 
       // ツールチップ用タイトル要素
       const titleEl = document.createElementNS(svgNS, "title");
-      titleEl.textContent = `${p.name}${isHl ? " [★強調]" : ""}\n${xKey}: ${p.x.toLocaleString()}\n${yKey}: ${p.y.toLocaleString()}`;
+      titleEl.textContent = `${p.name}${isHl ? " [★強調]" : ""}\n${xKey}: ${p.x.toLocaleString()}\n${yKey}: ${p.y.toLocaleString()}\n(クリックでラベル表示切替)`;
       circle.appendChild(titleEl);
+
+      // プロット点のクリック (個別ラベル表示/非表示のトグル)
+      circle.addEventListener('click', (e) => {
+        if (this.options.onPointClick) {
+          this.options.onPointClick(p, e);
+        }
+      });
 
       // ホバーハイライト
       circle.addEventListener('mouseenter', () => {

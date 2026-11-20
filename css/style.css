@@ -897,6 +897,10 @@ body {
   vertical-align: middle;
 }
 
+.preview-data-table td.chk-cell input.chk-row-label {
+  accent-color: #0284c7;
+}
+
 .preview-data-table td.chk-cell input.chk-row-highlight {
   accent-color: #ea580c;
 }
