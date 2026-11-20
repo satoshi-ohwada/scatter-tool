@@ -456,7 +456,7 @@ class ScatterPlot {
           r.setAttribute("width", q.w);
           r.setAttribute("height", q.h);
           r.setAttribute("fill", q.fill);
-          r.setAttribute("opacity", "0.80");
+          r.setAttribute("opacity", "0.68"); // ビジネス資料向けに上品で控えめな淡色パステルトーンに最適化
           svg.appendChild(r);
         }
       });
