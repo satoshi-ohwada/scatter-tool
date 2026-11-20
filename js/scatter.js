@@ -873,8 +873,8 @@ class ScatterPlot {
       rect.setAttribute("rx", "4");
       rect.setAttribute("fill", isHl ? "#fff7ed" : (theme.labelBg || "#ffffff"));
       rect.setAttribute("fill-opacity", isHl ? "1" : (theme.labelBgOpacity || "0.95"));
-      rect.setAttribute("stroke", isHl ? "#ea580c" : (label.userMoved ? theme.regLine : theme.labelBorder));
-      rect.setAttribute("stroke-width", isHl ? "2" : (label.userMoved ? "1.5" : "1"));
+      rect.setAttribute("stroke", isHl ? "#ea580c" : theme.labelBorder);
+      rect.setAttribute("stroke-width", isHl ? "2" : "1");
       if (isHl) {
         rect.style.filter = "drop-shadow(0 1px 2px rgba(234, 88, 12, 0.25))";
       }
@@ -888,7 +888,7 @@ class ScatterPlot {
       txt.setAttribute("text-anchor", "middle");
       txt.setAttribute("fill", isHl ? "#c2410c" : theme.labelText);
       txt.setAttribute("font-size", this.options.fontSize);
-      txt.setAttribute("font-weight", (isHl || label.userMoved) ? "bold" : "normal");
+      txt.setAttribute("font-weight", isHl ? "bold" : "normal");
       txt.setAttribute("font-family", "system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans JP', 'Hiragino Sans', 'Meiryo', sans-serif");
       txt.textContent = label.name;
       g.appendChild(txt);
