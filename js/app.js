@@ -1084,6 +1084,5 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // 初回起動: サンプルデータを自動読み込み
-  loadSampleData();
+  // 初回起動: 自動作図は行わず、ユーザーのデータ入力・選択を待機
 });

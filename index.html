@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>散布図作成ツール (QuickScatter)</title>
-  <link rel="stylesheet" href="css/style.css?v=9">
+  <link rel="stylesheet" href="css/style.css?v=10">
 </head>
 <body>
 
@@ -254,7 +254,16 @@
           </div>
         </div>
         <div class="chart-wrapper">
-          <div id="chartContainer" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;"></div>
+          <div id="chartContainer" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
+            <div class="empty-state" id="emptyStateGuide" style="padding: 40px; max-width: 480px; line-height: 1.6; text-align: center;">
+              <div style="font-size: 42px; margin-bottom: 12px;">📊</div>
+              <div style="font-size: 16px; font-weight: 600; color: var(--text-main); margin-bottom: 8px;">データが読み込まれていません</div>
+              <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
+                左パネルの「ファイル選択」またはドラッグ＆ドロップでCSV / Excelを読み込んでください。<br>
+                「📋 クリップボードから貼付」や「💡 サンプルデータ読込」からも開始できます。
+              </div>
+            </div>
+          </div>
 
           <!-- 画面右下のホバー表示サマリーウィジェット (指定時のみホバー展開で作図領域を最大化) -->
           <div class="summary-hover-widget" id="summaryHoverWidget">
@@ -266,7 +275,7 @@
                 </button>
               </div>
               <div id="summaryContent" class="summary-content">
-                <span class="text-muted">データ計算中...</span>
+                <span class="text-muted">データが読み込まれていません。</span>
               </div>
             </div>
 
@@ -364,10 +373,10 @@
   <script src="lib/xlsx.full.min.js"></script>
 
   <!-- アプリケーションモジュール -->
-  <script src="js/stats.js?v=9"></script>
-  <script src="js/parser.js?v=9"></script>
-  <script src="js/label_layout.js?v=9"></script>
-  <script src="js/scatter.js?v=9"></script>
-  <script src="js/app.js?v=9"></script>
+  <script src="js/stats.js?v=10"></script>
+  <script src="js/parser.js?v=10"></script>
+  <script src="js/label_layout.js?v=10"></script>
+  <script src="js/scatter.js?v=10"></script>
+  <script src="js/app.js?v=10"></script>
 </body>
 </html>
