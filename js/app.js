@@ -356,20 +356,55 @@ document.addEventListener('DOMContentLoaded', () => {
       const table = DataParser.parseCSVText(text);
       applyTableData(table, '令和7年国勢調査 表Ⅰ-2-1 (都道府県別人口増減・密度)');
 
-      // サンプル散布図の初期分析軸 (人口増減率 vs 人口密度) を明示設定
-      const targetX = table.numericColumns.find(c => c.includes('増減率') && c.includes('2020-2025')) || table.numericColumns[0];
-      const targetY = table.numericColumns.find(c => c.includes('密度')) || table.numericColumns[1];
+      // 1. 軸の設定: 2015-2020年増減率(X軸) vs 2020-2025年増減率(Y軸)
+      const targetX = table.numericColumns.find(c => c.includes('増減率') && c.includes('2015-2020')) || table.numericColumns[0];
+      const targetY = table.numericColumns.find(c => c.includes('増減率') && c.includes('2020-2025')) || table.numericColumns[1];
       if (targetX) elements.selectX.value = targetX;
       if (targetY) elements.selectY.value = targetY;
 
-      elements.chartTitle.value = '令和7年国勢調査 都道府県別 人口密度 vs 人口増減率';
-      elements.xTitle.value = targetX || '人口増減率 (%) [2020年〜2025年]';
-      elements.yTitle.value = targetY || '人口密度 (人/km²)';
-      elements.q1Label.value = 'Q1: 高密度・増加/高維持 (大都市圏)';
-      elements.q2Label.value = 'Q2: 高密度・人口減少 (都市圏)';
-      elements.q3Label.value = 'Q3: 低密度・人口減少 (地方過疎圏)';
-      elements.q4Label.value = 'Q4: 低密度・善戦/緩縮 (地方中核・沖縄等)';
+      elements.chartTitle.value = '都道府県別 人口増減率の推移 (2015-2020年 vs 2020-2025年)';
+      elements.xTitle.value = '人口増減率 2015-2020年 (%)';
+      elements.yTitle.value = '人口増減率 2020-2025年 (%)';
+      elements.chkLine45.checked = true;
+      elements.chkAspect1to1.checked = true;
+      elements.q1Label.value = 'Q1: 前期増・今期増 (維持・拡大)';
+      elements.q2Label.value = 'Q2: 前期減・今期改善 (反転傾向)';
+      elements.q3Label.value = 'Q3: 前期減・今期減 (減少継続)';
+      elements.q4Label.value = 'Q4: 前期増・今期減 (減速傾向)';
+
+      // 2. ラベル指定: 東北6県 + 上位5位 + 下位5位のみに付与
+      state.labeledRowIds.clear();
+      const tohokuPrefs = ['青森県', '岩手県', '宮城県', '秋田県', '山形県', '福島県'];
+
+      // 有効な数値行を抽出してY軸（2020-2025年増減率）順にソート
+      const validRows = table.rows
+        .map(r => ({ rowId: r._rowId, name: r['都道府県'], val: parseFloat(r[targetY]) }))
+        .filter(r => !isNaN(r.val));
+      validRows.sort((a, b) => b.val - a.val);
+
+      const top5RowIds = validRows.slice(0, 5).map(r => r.rowId);
+      const bottom5RowIds = validRows.slice(-5).map(r => r.rowId);
+
+      // 東北6県の行ID
+      const tohokuRowIds = table.rows
+        .filter(r => tohokuPrefs.includes(r['都道府県']))
+        .map(r => r._rowId);
+
+      const targetLabelIds = new Set([...tohokuRowIds, ...top5RowIds, ...bottom5RowIds]);
+      targetLabelIds.forEach(id => state.labeledRowIds.add(id));
+
+      // ラベル表示モードを「個別指定のみ表示」に設定
+      elements.selectLabelMode.value = 'custom';
+
+      // 3. 強調表示: 青森県のみ強調 (★)
+      state.highlightedRowIds.clear();
+      const aomoriRow = table.rows.find(r => r['都道府県'] === '青森県');
+      if (aomoriRow) {
+        state.highlightedRowIds.add(aomoriRow._rowId);
+      }
+
       redrawChart();
+      showToast('デモデータを読み込みました（2015-2020 vs 2020-2025増減率 / 東北6県・上下5位ラベル / 青森県強調）', 'success');
     } catch (err) {
       console.error(err);
       showToast(`サンプルデータの読込に失敗しました: ${err.message}`, 'error');
