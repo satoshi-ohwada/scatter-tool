@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
     dropZone: document.getElementById('dropZone'),
     fileInput: document.getElementById('fileInput'),
     btnSample: document.getElementById('btnSample'),
+    btnSampleEmpty: document.getElementById('btnSampleEmpty'),
     btnPaste: document.getElementById('btnPaste'),
     fileInfo: document.getElementById('fileInfo'),
 
@@ -507,6 +508,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   elements.btnSample.addEventListener('click', loadSampleData);
+  if (elements.btnSampleEmpty) elements.btnSampleEmpty.addEventListener('click', loadSampleData);
   elements.btnPaste.addEventListener('click', pasteFromClipboard);
 
   // 列選択変更イベント

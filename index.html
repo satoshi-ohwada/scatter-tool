@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>散布図作成ツール (QuickScatter)</title>
-  <link rel="stylesheet" href="css/style.css?v=11">
+  <link rel="stylesheet" href="css/style.css?v=12">
 </head>
 <body>
 
@@ -43,7 +43,7 @@
             📋 コピペ取込
           </button>
           <button id="btnSample" class="btn btn-sm btn-block" title="総務省・令和7年国勢調査 表Ⅰ-2-1 (都道府県別人口増減・密度) サンプルを読み込み">
-            🧪 サンプル読込
+            💡 サンプルデータ読込
           </button>
         </div>
         <div id="fileInfo" class="file-info-badge" style="display: none;"></div>
@@ -260,7 +260,12 @@
               <div style="font-size: 16px; font-weight: 600; color: var(--text-main); margin-bottom: 8px;">データが読み込まれていません</div>
               <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
                 左パネルの「ファイル選択」またはドラッグ＆ドロップでCSV / Excelを読み込んでください。<br>
-                「📋 クリップボードから貼付」や「💡 サンプルデータ読込」からも開始できます。
+                「📋 コピペ取込」や下のボタンからも開始できます。
+              </div>
+              <div style="display: flex; gap: 10px; justify-content: center; margin-top: 8px;">
+                <button id="btnSampleEmpty" class="btn btn-primary btn-sm" style="padding: 8px 18px; font-weight: 600;" title="デモ用サンプルデータを読み込み">
+                  💡 デモデータを読み込む
+                </button>
               </div>
             </div>
           </div>
@@ -373,10 +378,10 @@
   <script src="lib/xlsx.full.min.js"></script>
 
   <!-- アプリケーションモジュール -->
-  <script src="js/stats.js?v=11"></script>
-  <script src="js/parser.js?v=11"></script>
-  <script src="js/label_layout.js?v=11"></script>
-  <script src="js/scatter.js?v=11"></script>
-  <script src="js/app.js?v=11"></script>
+  <script src="js/stats.js?v=12"></script>
+  <script src="js/parser.js?v=12"></script>
+  <script src="js/label_layout.js?v=12"></script>
+  <script src="js/scatter.js?v=12"></script>
+  <script src="js/app.js?v=12"></script>
 </body>
 </html>
