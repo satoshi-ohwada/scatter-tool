@@ -18,7 +18,8 @@ class ScatterPlot {
       pointRadius: 6,
       pointOpacity: 0.75,
       showQuadrant: true,
-      quadrantSplitType: 'mean', // 'mean', 'median', or 'geometric'
+      quadrantSplitType: 'mean', // 'mean', 'median', 'geometric', or 'weighted'
+      quadrantWeightKey: null,
       showQuadrantBg: true,
       colorPointsByQuadrant: false,
       quadrantLabels: {
@@ -306,6 +307,20 @@ class ScatterPlot {
     const stdY = Stats.stdDev(yValues, meanY);
     const regression = Stats.linearRegression(xValues, yValues);
 
+    let weightedX = null;
+    let weightedY = null;
+    if (this.options.quadrantWeightKey) {
+      const weightKey = this.options.quadrantWeightKey;
+      const weights = validRows.map(r => {
+        const rawW = r[weightKey];
+        if (rawW === undefined || rawW === null || rawW === '') return 0;
+        const w = typeof rawW === 'number' ? rawW : parseFloat(String(rawW).replace(/,/g, ''));
+        return (!isNaN(w) && isFinite(w) && w >= 0) ? w : 0;
+      });
+      weightedX = Stats.weightedMean(xValues, weights);
+      weightedY = Stats.weightedMean(yValues, weights);
+    }
+
     let splitX = meanX;
     let splitY = meanY;
     let splitTypeName = '平均';
@@ -324,6 +339,16 @@ class ScatterPlot {
         splitX = meanX;
         splitY = meanY;
         splitTypeName = '平均(幾何不可)';
+      }
+    } else if (this.options.quadrantSplitType === 'weighted') {
+      if (weightedX !== null && weightedY !== null) {
+        splitX = weightedX;
+        splitY = weightedY;
+        splitTypeName = '加重平均';
+      } else {
+        splitX = meanX;
+        splitY = meanY;
+        splitTypeName = '平均(重み未設定)';
       }
     }
 
@@ -1033,6 +1058,8 @@ class ScatterPlot {
       medianY,
       geomX,
       geomY,
+      weightedX,
+      weightedY,
       stdX,
       stdY,
       splitX,

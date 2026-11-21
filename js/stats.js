@@ -11,6 +11,27 @@ const Stats = {
     return sum / arr.length;
   },
 
+  // 加重平均値 (arr: 数値配列, weights: 重み配列)
+  weightedMean(arr, weights) {
+    if (!arr || arr.length === 0) return 0;
+    if (!weights || weights.length === 0) return this.mean(arr);
+    let sumWeight = 0;
+    let sumWeightedVal = 0;
+    const n = Math.min(arr.length, weights.length);
+    for (let i = 0; i < n; i++) {
+      const val = Number(arr[i]);
+      const w = Number(weights[i]);
+      if (!isNaN(val) && isFinite(val) && !isNaN(w) && isFinite(w) && w >= 0) {
+        sumWeight += w;
+        sumWeightedVal += val * w;
+      }
+    }
+    if (sumWeight === 0) {
+      return this.mean(arr);
+    }
+    return sumWeightedVal / sumWeight;
+  },
+
   // 幾何平均値 (相乗平均: 全ての値が > 0 の場合のみ計算可能)
   geometricMean(arr) {
     if (!arr || arr.length === 0) return null;

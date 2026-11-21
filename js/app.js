@@ -35,6 +35,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // 補助線設定
     chkQuadrant: document.getElementById('chkQuadrant'),
     quadrantSplitType: document.getElementById('quadrantSplitType'),
+    groupQuadrantWeight: document.getElementById('groupQuadrantWeight'),
+    selectQuadrantWeight: document.getElementById('selectQuadrantWeight'),
     chkQuadrantBg: document.getElementById('chkQuadrantBg'),
     chkQuadrantColorPoints: document.getElementById('chkQuadrantColorPoints'),
     chkLine45: document.getElementById('chkLine45'),
@@ -146,6 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
       fontSize: parseFloat(elements.rangeFontSize.value) || 11,
       showQuadrant: elements.chkQuadrant.checked,
       quadrantSplitType: elements.quadrantSplitType.value,
+      quadrantWeightKey: elements.selectQuadrantWeight ? elements.selectQuadrantWeight.value : null,
       showQuadrantBg: elements.chkQuadrantBg.checked,
       colorPointsByQuadrant: elements.chkQuadrantColorPoints ? elements.chkQuadrantColorPoints.checked : false,
       quadrantLabels: {
@@ -228,6 +231,8 @@ document.addEventListener('DOMContentLoaded', () => {
       splitName = '中央値';
     } else if (elements.quadrantSplitType.value === 'geometric') {
       splitName = (stats.geomX !== null && stats.geomY !== null) ? '幾何平均' : '平均(幾何不可)';
+    } else if (elements.quadrantSplitType.value === 'weighted') {
+      splitName = '加重平均';
     }
 
     if (elements.summaryContent) {
@@ -315,6 +320,29 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.selectLabel.value = parsedTable.labelColumn;
     elements.selectX.value = parsedTable.defaultX;
     elements.selectY.value = parsedTable.defaultY;
+
+    // 加重平均用の属性セレクターを更新
+    if (elements.selectQuadrantWeight) {
+      const currentWeightVal = elements.selectQuadrantWeight.value;
+      elements.selectQuadrantWeight.innerHTML = '';
+      parsedTable.columns.forEach(col => {
+        const isNum = parsedTable.numericColumns.includes(col);
+        const labelText = isNum ? `${col} (数値)` : col;
+        elements.selectQuadrantWeight.add(new Option(labelText, col));
+      });
+
+      if (currentWeightVal && parsedTable.columns.includes(currentWeightVal)) {
+        elements.selectQuadrantWeight.value = currentWeightVal;
+      } else {
+        const preferredWeight = parsedTable.numericColumns.find(c => /人口|重み|ウェイト|weight|pop/i.test(c))
+          || parsedTable.numericColumns.find(c => c !== parsedTable.defaultX && c !== parsedTable.defaultY)
+          || parsedTable.numericColumns[0]
+          || parsedTable.columns[0];
+        if (preferredWeight) {
+          elements.selectQuadrantWeight.value = preferredWeight;
+        }
+      }
+    }
 
     // 軸タイトルの初期設定
     elements.xTitle.value = parsedTable.defaultX;
@@ -535,10 +563,18 @@ document.addEventListener('DOMContentLoaded', () => {
     input.addEventListener('input', redrawChart);
   });
 
+  // 加重平均ウェイト属性選択の表示・非表示制御
+  function updateQuadrantWeightVisibility() {
+    if (!elements.groupQuadrantWeight) return;
+    const isWeighted = elements.quadrantSplitType.value === 'weighted';
+    elements.groupQuadrantWeight.style.display = isWeighted ? 'block' : 'none';
+  }
+
   // 補助線チェックボックス・設定変更
   [
     elements.chkQuadrant,
     elements.quadrantSplitType,
+    elements.selectQuadrantWeight,
     elements.chkQuadrantBg,
     elements.chkQuadrantColorPoints,
     elements.chkLine45,
@@ -549,12 +585,13 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.selectLabelMode,
     elements.chkLeaderLines,
     elements.selectTheme
-  ].forEach(ctrl => {
+  ].filter(Boolean).forEach(ctrl => {
     ctrl.addEventListener('change', redrawChart);
   });
 
-  // 幾何平均選択時の警告通知
+  // 分割基準変更時の表示切替および幾何平均選択時の警告通知
   elements.quadrantSplitType.addEventListener('change', () => {
+    updateQuadrantWeightVisibility();
     if (elements.quadrantSplitType.value === 'geometric' && state.currentStats) {
       if (state.currentStats.geomX === null || state.currentStats.geomY === null) {
         showToast('データに0以下の値が含まれているため、幾何平均の代わりに平均値を表示しています', 'info');
@@ -673,13 +710,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const geomXStr = s.geomX !== null ? s.geomX.toFixed(2) : '計算不可(<=0)';
     const geomYStr = s.geomY !== null ? s.geomY.toFixed(2) : '計算不可(<=0)';
+    const weightedXStr = s.weightedX !== null ? `, 加重平均=${s.weightedX.toFixed(2)}` : '';
+    const weightedYStr = s.weightedY !== null ? `, 加重平均=${s.weightedY.toFixed(2)}` : '';
 
     let text = `【散布図集計サマリー】\n`;
     text += `タイトル: ${elements.chartTitle.value}\n`;
     text += `X軸: ${xKey} / Y軸: ${yKey}\n`;
     text += `サンプル数: ${s.totalCount}\n`;
-    text += `X軸: 平均=${s.meanX.toFixed(2)}, 中央値=${s.medianX.toFixed(2)}, 幾何平均=${geomXStr}, 標準偏差=${s.stdX.toFixed(2)}\n`;
-    text += `Y軸: 平均=${s.meanY.toFixed(2)}, 中央値=${s.medianY.toFixed(2)}, 幾何平均=${geomYStr}, 標準偏差=${s.stdY.toFixed(2)}\n`;
+    text += `X軸: 平均=${s.meanX.toFixed(2)}, 中央値=${s.medianX.toFixed(2)}, 幾何平均=${geomXStr}${weightedXStr}, 標準偏差=${s.stdX.toFixed(2)}\n`;
+    text += `Y軸: 平均=${s.meanY.toFixed(2)}, 中央値=${s.medianY.toFixed(2)}, 幾何平均=${geomYStr}${weightedYStr}, 標準偏差=${s.stdY.toFixed(2)}\n`;
     text += `相関係数 (r): ${reg.r.toFixed(4)}\n`;
     text += `決定係数 (R²): ${reg.r2.toFixed(4)}\n`;
     text += `1次回帰式: y = ${reg.slope.toFixed(4)}x ${sign} ${Math.abs(reg.intercept).toFixed(4)}\n\n`;
@@ -1138,6 +1177,9 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   });
+
+  // 初回起動時のUI状態初期化
+  updateQuadrantWeightVisibility();
 
   // 初回起動: 自動作図は行わず、ユーザーのデータ入力・選択を待機
 });

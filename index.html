@@ -105,6 +105,13 @@
               <option value="mean" selected>平均値 (X平均・Y平均)</option>
               <option value="median">中央値 (X中央値・Y中央値)</option>
               <option value="geometric">幾何平均 (正の値のみ)</option>
+              <option value="weighted">加重平均 (ウェイト指定)</option>
+            </select>
+          </div>
+          <div class="form-group" id="groupQuadrantWeight" style="display: none; margin-top: 6px;">
+            <label class="form-label" for="selectQuadrantWeight">加重の基準属性 (ウェイト)</label>
+            <select id="selectQuadrantWeight" class="form-select">
+              <option value="">(属性を選択)</option>
             </select>
           </div>
           <label class="check-label" style="font-size: 11px; font-weight: normal;">
