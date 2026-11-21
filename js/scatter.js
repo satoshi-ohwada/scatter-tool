@@ -59,83 +59,123 @@ class ScatterPlot {
         grid: '#e2e8f0',
         axis: '#475569',
         text: '#1e293b',
-        pointFill: '#2563eb',
+        pointFill: '#2563eb', // ロイヤルブルー
         pointStroke: '#ffffff',
-        regLine: '#dc2626',
+        regLine: '#dc2626',   // クリムゾンレッド
         regBand: '#dc2626',
         regBandOpacity: '0.12',
-        line45: '#059669',
+        line45: '#059669',    // フォレストグリーン
         quadrantLine: '#94a3b8',
-        quadrantBg: ['#bae6fd', '#fef08a', '#e7e5e4', '#fed7aa'], // CUD完全準拠(緑不使用): Q1(青:sky-200), Q2(黄:yellow-200), Q3(灰:stone-200), Q4(橙:orange-200)
-        quadrantFg: ['#005aff', '#b45309', '#44403c', '#c2410c'], // CUD・高コントラスト: Q1(青), Q2(黄/アンバー), Q3(石灰/チャコール), Q4(橙)
+        quadrantBg: ['#bae6fd', '#fef08a', '#e2e8f0', '#fed7aa'], // CUD完全準拠(緑不使用): Q1(青), Q2(黄), Q3(灰), Q4(橙)
+        quadrantFg: ['#005aff', '#b45309', '#44403c', '#c2410c'], // CUD・高コントラスト
+        quadrantOpacity: '0.68',
         leaderLine: '#64748b',
         labelBg: '#ffffff',
         labelBgOpacity: '0.95',
         labelBorder: '#cbd5e1',
-        labelText: '#0f172a'
+        labelText: '#0f172a',
+        // 強調表示スタイル (コーラルオレンジ)
+        hlPoint: '#ea580c',
+        hlPointStroke: '#ffffff',
+        hlLine: '#ea580c',
+        hlLabelBg: '#fff7ed',
+        hlLabelBorder: '#ea580c',
+        hlLabelText: '#c2410c',
+        hlShadow: 'drop-shadow(0 1px 2px rgba(234, 88, 12, 0.4))'
       },
       emerald: {
         bg: '#ffffff',
-        plotBg: '#f0fdfa',
-        grid: '#ccfbf1',
-        axis: '#115e59',
-        text: '#134e4a',
-        pointFill: '#0d9488',
+        plotBg: '#f0fdf4', // 淡いミントグリーン
+        grid: '#dcfce7',
+        axis: '#166534',
+        text: '#14532d',
+        pointFill: '#059669', // エメラルドグリーン
         pointStroke: '#ffffff',
-        regLine: '#e11d48',
-        regBand: '#e11d48',
+        regLine: '#0284c7',   // スカイブルー
+        regBand: '#0284c7',
         regBandOpacity: '0.12',
-        line45: '#2563eb',
-        quadrantLine: '#5eead4',
-        quadrantBg: ['#bae6fd', '#fef08a', '#e7e5e4', '#fed7aa'],
-        quadrantFg: ['#005aff', '#b45309', '#44403c', '#c2410c'],
-        leaderLine: '#14b8a6',
+        line45: '#d97706',    // アンバー
+        quadrantLine: '#86efac',
+        // エメラルド専用のフレッシュな淡色4象限
+        quadrantBg: ['#a7f3d0', '#fef08a', '#e0f2fe', '#fed7aa'], // Q1(ミント), Q2(レモン), Q3(アイスブルー), Q4(ピーチ)
+        quadrantFg: ['#047857', '#a16207', '#0369a1', '#c2410c'],
+        quadrantOpacity: '0.65',
+        leaderLine: '#059669',
         labelBg: '#ffffff',
         labelBgOpacity: '0.95',
-        labelBorder: '#99f6e4',
-        labelText: '#042f2e'
+        labelBorder: '#a7f3d0',
+        labelText: '#064e3b',
+        // 強調表示スタイル (ローズレッド)
+        hlPoint: '#e11d48',
+        hlPointStroke: '#ffffff',
+        hlLine: '#e11d48',
+        hlLabelBg: '#fff1f2',
+        hlLabelBorder: '#f43f5e',
+        hlLabelText: '#be123c',
+        hlShadow: 'drop-shadow(0 1px 2px rgba(225, 29, 72, 0.4))'
       },
       vibrant: {
         bg: '#ffffff',
-        plotBg: '#faf5ff',
+        plotBg: '#faf5ff', // 淡いラベンダー
         grid: '#f3e8ff',
-        axis: '#6b21a8',
+        axis: '#581c87',
         text: '#3b0764',
-        pointFill: '#9333ea',
+        pointFill: '#7c3aed', // バイオレット
         pointStroke: '#ffffff',
-        regLine: '#ea580c',
-        regBand: '#ea580c',
+        regLine: '#f43f5e',   // ビビッドローズ
+        regBand: '#f43f5e',
         regBandOpacity: '0.12',
-        line45: '#0284c7',
-        quadrantLine: '#d8b4fe',
-        quadrantBg: ['#bae6fd', '#fef08a', '#e7e5e4', '#fed7aa'],
-        quadrantFg: ['#005aff', '#b45309', '#44403c', '#c2410c'],
-        leaderLine: '#a855f7',
+        line45: '#06b6d4',    // シアン
+        quadrantLine: '#c084fc',
+        // バイブラント専用の華やかなパステル4象限
+        quadrantBg: ['#ddd6fe', '#fbcfe8', '#cffafe', '#fef08a'], // Q1(バイオレット), Q2(ピンク), Q3(シアン), Q4(イエロー)
+        quadrantFg: ['#6d28d9', '#be185d', '#0e7490', '#a16207'],
+        quadrantOpacity: '0.65',
+        leaderLine: '#7c3aed',
         labelBg: '#ffffff',
         labelBgOpacity: '0.95',
-        labelBorder: '#e9d5ff',
-        labelText: '#2e1065'
+        labelBorder: '#d8b4fe',
+        labelText: '#3b0764',
+        // 強調表示スタイル (ブライトオレンジ)
+        hlPoint: '#f97316',
+        hlPointStroke: '#ffffff',
+        hlLine: '#f97316',
+        hlLabelBg: '#fff7ed',
+        hlLabelBorder: '#ea580c',
+        hlLabelText: '#c2410c',
+        hlShadow: 'drop-shadow(0 1px 2px rgba(249, 115, 22, 0.4))'
       },
       academic: {
         bg: '#ffffff',
-        plotBg: '#ffffff',
+        plotBg: '#ffffff', // 純白
         grid: '#e5e5e5',
-        axis: '#171717',
+        axis: '#171717',   // 濃黒
         text: '#171717',
-        pointFill: '#404040',
+        pointFill: '#525252', // ニュートラルグレー
         pointStroke: '#ffffff',
-        regLine: '#000000',
+        regLine: '#000000',   // 純黒
         regBand: '#000000',
-        regBandOpacity: '0.08',
-        line45: '#737373',
-        quadrantLine: '#a3a3a3',
-        quadrantBg: ['#cbd5e1', '#fef08a', '#e7e5e4', '#fed7aa'],
-        quadrantFg: ['#1e293b', '#b45309', '#44403c', '#c2410c'],
+        regBandOpacity: '0.07',
+        line45: '#737373',    // 中灰
+        quadrantLine: '#737373',
+        // 完全モノクロ4象限 (有彩色ゼロ: スレートグレー4階調)
+        quadrantBg: ['#e2e8f0', '#f8fafc', '#cbd5e1', '#f1f5f9'], // Q1(薄灰), Q2(最淡灰), Q3(中灰), Q4(淡灰)
+        quadrantFg: ['#0f172a', '#334155', '#475569', '#1e293b'], // 無彩色チャコール〜黒
+        quadrantPointFg: ['#0f172a', '#475569', '#94a3b8', '#64748b'], // 点の象限色分け時も無彩色4階調
+        quadrantOpacity: '0.50',
         leaderLine: '#525252',
         labelBg: '#ffffff',
         labelBgOpacity: '0.95',
-        labelBorder: '#a3a3a3',
-        labelText: '#171717'
+        labelBorder: '#737373',
+        labelText: '#171717',
+        // 強調表示スタイル (有彩色ゼロ: 純黒プロット ＆ 反転黒ベタ白抜きラベル)
+        hlPoint: '#000000',
+        hlPointStroke: '#ffffff',
+        hlLine: '#000000',
+        hlLabelBg: '#171717',
+        hlLabelBorder: '#000000',
+        hlLabelText: '#ffffff',
+        hlShadow: 'none'
       }
     };
 
@@ -509,7 +549,7 @@ class ScatterPlot {
           r.setAttribute("width", q.w);
           r.setAttribute("height", q.h);
           r.setAttribute("fill", q.fill);
-          r.setAttribute("opacity", "0.68"); // ビジネス資料向けに上品で控えめな淡色パステルトーンに最適化
+          r.setAttribute("opacity", theme.quadrantOpacity !== undefined ? theme.quadrantOpacity : "0.68");
           svg.appendChild(r);
         }
       });
@@ -648,9 +688,9 @@ class ScatterPlot {
         boxBg.setAttribute("width", boxW);
         boxBg.setAttribute("height", boxH);
         boxBg.setAttribute("rx", "11");
-        boxBg.setAttribute("fill", "#ffffff");
-        boxBg.setAttribute("fill-opacity", "0.95");
-        boxBg.setAttribute("stroke", "#cbd5e1");
+        boxBg.setAttribute("fill", theme.labelBg || "#ffffff");
+        boxBg.setAttribute("fill-opacity", theme.labelBgOpacity || "0.95");
+        boxBg.setAttribute("stroke", theme.labelBorder || "#cbd5e1");
         boxBg.setAttribute("stroke-width", "0.8");
         boxBg.style.filter = "drop-shadow(0 1px 2px rgba(0,0,0,0.06))";
         statBox.appendChild(boxBg);
@@ -670,12 +710,12 @@ class ScatterPlot {
         t.appendChild(tSpanEq);
 
         const tSpanSep = document.createElementNS(svgNS, "tspan");
-        tSpanSep.setAttribute("fill", "#94a3b8");
+        tSpanSep.setAttribute("fill", theme.axis || "#94a3b8");
         tSpanSep.textContent = "   ";
         t.appendChild(tSpanSep);
 
         const tSpanR2 = document.createElementNS(svgNS, "tspan");
-        tSpanR2.setAttribute("fill", "#334155");
+        tSpanR2.setAttribute("fill", theme.text || "#334155");
         tSpanR2.setAttribute("font-weight", "bold");
         tSpanR2.textContent = r2Text;
         t.appendChild(tSpanR2);
@@ -770,7 +810,7 @@ class ScatterPlot {
           t.setAttribute("font-size", "11");
           t.setAttribute("font-weight", "bold");
           t.setAttribute("opacity", "0.95");
-          t.setAttribute("stroke", "#ffffff");
+          t.setAttribute("stroke", theme.plotBg || theme.bg || "#ffffff");
           t.setAttribute("stroke-opacity", "0.95");
           t.setAttribute("stroke-width", "3");
           t.setAttribute("paint-order", "stroke fill");
@@ -816,7 +856,7 @@ class ScatterPlot {
       const line = document.createElementNS(svgNS, "line");
       line.setAttribute("data-leader-id", label.id);
       const isHl = !!label.isHighlighted;
-      line.setAttribute("stroke", isHl ? "#ea580c" : theme.leaderLine);
+      line.setAttribute("stroke", isHl ? (theme.hlLine || "#ea580c") : theme.leaderLine);
       line.setAttribute("stroke-width", isHl ? "1.5" : "1");
       line.setAttribute("stroke-dasharray", isHl ? "none" : "2,2");
       if (leader && this.options.showLeaderLines && label.visible) {
@@ -845,9 +885,9 @@ class ScatterPlot {
 
       let pColor = theme.pointFill;
       if (isHl) {
-        pColor = "#ea580c";
+        pColor = theme.hlPoint || "#ea580c";
       } else if (this.options.colorPointsByQuadrant && this.options.showQuadrant) {
-        const qFg = theme.quadrantFg || ['#005aff', '#b45309', '#44403c', '#c2410c'];
+        const qFg = theme.quadrantPointFg || theme.quadrantFg || ['#005aff', '#b45309', '#44403c', '#c2410c'];
         if (p.x >= splitX && p.y >= splitY) {
           pColor = qFg[0]; // Q1
         } else if (p.x < splitX && p.y >= splitY) {
@@ -859,11 +899,13 @@ class ScatterPlot {
         }
       }
       circle.setAttribute("fill", pColor);
-      circle.setAttribute("stroke", isHl ? "#ffffff" : theme.pointStroke);
+      circle.setAttribute("stroke", isHl ? (theme.hlPointStroke || "#ffffff") : theme.pointStroke);
       circle.setAttribute("stroke-width", isHl ? "2" : "1.5");
       circle.setAttribute("fill-opacity", isHl ? "1" : this.options.pointOpacity);
-      if (isHl) {
-        circle.style.filter = "drop-shadow(0 1px 2px rgba(234, 88, 12, 0.4))";
+      if (isHl && theme.hlShadow && theme.hlShadow !== 'none') {
+        circle.style.filter = theme.hlShadow;
+      } else if (isHl) {
+        circle.style.filter = "none";
       }
       circle.style.cursor = "pointer";
       circle.style.transition = "transform 0.15s ease, r 0.15s ease";
@@ -916,12 +958,14 @@ class ScatterPlot {
       rect.setAttribute("width", label.width);
       rect.setAttribute("height", label.height);
       rect.setAttribute("rx", "4");
-      rect.setAttribute("fill", isHl ? "#fff7ed" : (theme.labelBg || "#ffffff"));
+      rect.setAttribute("fill", isHl ? (theme.hlLabelBg || "#fff7ed") : (theme.labelBg || "#ffffff"));
       rect.setAttribute("fill-opacity", isHl ? "1" : (theme.labelBgOpacity || "0.95"));
-      rect.setAttribute("stroke", isHl ? "#ea580c" : theme.labelBorder);
+      rect.setAttribute("stroke", isHl ? (theme.hlLabelBorder || "#ea580c") : theme.labelBorder);
       rect.setAttribute("stroke-width", isHl ? "2" : "1");
-      if (isHl) {
-        rect.style.filter = "drop-shadow(0 1px 2px rgba(234, 88, 12, 0.25))";
+      if (isHl && theme.hlShadow && theme.hlShadow !== 'none') {
+        rect.style.filter = "drop-shadow(0 1px 2px rgba(0, 0, 0, 0.15))";
+      } else {
+        rect.style.filter = "none";
       }
       g.appendChild(rect);
 
@@ -931,7 +975,7 @@ class ScatterPlot {
       txt.setAttribute("y", "0");
       txt.setAttribute("dy", "0.32em");
       txt.setAttribute("text-anchor", "middle");
-      txt.setAttribute("fill", isHl ? "#c2410c" : theme.labelText);
+      txt.setAttribute("fill", isHl ? (theme.hlLabelText || "#c2410c") : theme.labelText);
       txt.setAttribute("font-size", this.options.fontSize);
       txt.setAttribute("font-weight", isHl ? "bold" : "normal");
       txt.setAttribute("font-family", "system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans JP', 'Hiragino Sans', 'Meiryo', sans-serif");
