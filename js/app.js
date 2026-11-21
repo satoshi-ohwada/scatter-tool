@@ -35,6 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 補助線設定
     chkQuadrant: document.getElementById('chkQuadrant'),
     quadrantSplitType: document.getElementById('quadrantSplitType'),
+    quadrantSplitHint: document.getElementById('quadrantSplitHint'),
     groupQuadrantWeight: document.getElementById('groupQuadrantWeight'),
     selectQuadrantWeight: document.getElementById('selectQuadrantWeight'),
     chkQuadrantBg: document.getElementById('chkQuadrantBg'),
@@ -563,6 +564,21 @@ document.addEventListener('DOMContentLoaded', () => {
     input.addEventListener('input', redrawChart);
   });
 
+  // 4象限分割基準の用途ガイド・ヒント文
+  const QUADRANT_SPLIT_HINTS = {
+    mean: '💡 基本・標準：全体バランスを把握したいときに最適',
+    median: '💡 外れ値対策：極端な大企業・大都市があるときや、上下半々に分けたいとき',
+    geometric: '💡 比率・倍率：前年比や売上成長率など「掛け算で変化する指標」のとき',
+    weighted: '💡 規模の重心：売上や人口などの「規模の差」を加味した実勢値で見たいとき'
+  };
+
+  // 分割基準のヒント更新
+  function updateQuadrantSplitHint() {
+    if (!elements.quadrantSplitHint || !elements.quadrantSplitType) return;
+    const type = elements.quadrantSplitType.value;
+    elements.quadrantSplitHint.textContent = QUADRANT_SPLIT_HINTS[type] || '';
+  }
+
   // 加重平均ウェイト属性選択の表示・非表示制御
   function updateQuadrantWeightVisibility() {
     if (!elements.groupQuadrantWeight) return;
@@ -592,6 +608,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // 分割基準変更時の表示切替および幾何平均選択時の警告通知
   elements.quadrantSplitType.addEventListener('change', () => {
     updateQuadrantWeightVisibility();
+    updateQuadrantSplitHint();
     if (elements.quadrantSplitType.value === 'geometric' && state.currentStats) {
       if (state.currentStats.geomX === null || state.currentStats.geomY === null) {
         showToast('データに0以下の値が含まれているため、幾何平均の代わりに平均値を表示しています', 'info');
@@ -1180,6 +1197,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 初回起動時のUI状態初期化
   updateQuadrantWeightVisibility();
+  updateQuadrantSplitHint();
 
   // 初回起動: 自動作図は行わず、ユーザーのデータ入力・選択を待機
 });
