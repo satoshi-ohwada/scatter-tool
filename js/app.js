@@ -373,6 +373,7 @@ document.addEventListener('DOMContentLoaded', () => {
       elements.yTitle.value = '人口増減率 2020-2025年 (%)';
       elements.chkLine45.checked = false;
       elements.chkAspect1to1.checked = false;
+      elements.chkConfidence.checked = false;
       elements.q1Label.value = 'Q1: 前期増・今期増 (維持・拡大)';
       elements.q2Label.value = 'Q2: 前期減・今期改善 (反転傾向)';
       elements.q3Label.value = 'Q3: 前期減・今期減 (減少継続)';

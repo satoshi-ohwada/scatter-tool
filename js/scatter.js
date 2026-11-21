@@ -31,7 +31,7 @@ class ScatterPlot {
       lockAspect1to1: false,
       showRegression: true,
       showRegressionEquation: false, // 回帰式・決定係数のグラフ内表示 (デフォルト控えめ/非表示)
-      showConfidenceInterval: true,
+      showConfidenceInterval: false,
       labelMode: 'all', // 'all', 'outliers', 'top5', 'none'
       showLeaderLines: true,
       fontSize: 11,
