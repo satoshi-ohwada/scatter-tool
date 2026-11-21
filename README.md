@@ -130,6 +130,8 @@ python3 serve.py
 ```
 scatter-tool/
 ├── index.html          # メインアプリケーションUI
+├── GEMINI.md           # 開発ガイドライン・自動ローカルコミット規約
+├── kidou.bat           # Windows用ワンクリック起動バッチ
 ├── css/
 │   └── style.css       # スタイル定義
 ├── js/
@@ -146,6 +148,8 @@ scatter-tool/
 │   ├── sample_census2025.csv # サンプルデータ (総務省 令和7年国勢調査 表Ⅰ-2-1 都道府県別人口[2015/2020/2025年・順位]・人口増減[2015-2020/2020-2025]・密度・面積。元統計表の列並び順と完全一致)
 │   └── sample_retail.csv     # サンプルデータ (店舗別分析)
 ├── serve.py            # ローカルHTTPサーバー (Python標準ライブラリのみ使用)
-├── serve.sh            # 起動シェルスクリプト
+├── serve.sh            # 起動シェルスクリプト (Linux/macOS)
+├── work/               # 検証・一時作業用ディレクトリ (.gitignore除外)
+│   └── .gitkeep
 └── README.md           # 取扱説明書 (本ファイル)
 ```
