@@ -11,6 +11,17 @@ const Stats = {
     return sum / arr.length;
   },
 
+  // 幾何平均値 (相乗平均: 全ての値が > 0 の場合のみ計算可能)
+  geometricMean(arr) {
+    if (!arr || arr.length === 0) return null;
+    for (let i = 0; i < arr.length; i++) {
+      if (arr[i] <= 0) return null;
+    }
+    // オーバーフロー・アンダーフローを防ぐため対数和で計算: exp( (1/n) * Σ ln(x_i) )
+    const logSum = arr.reduce((acc, val) => acc + Math.log(val), 0);
+    return Math.exp(logSum / arr.length);
+  },
+
   // 中央値
   median(arr) {
     if (!arr || arr.length === 0) return 0;

@@ -223,7 +223,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const reg = stats.regression;
     const sign = reg.intercept >= 0 ? '+' : '-';
-    const splitName = elements.quadrantSplitType.value === 'median' ? '中央値' : '平均値';
+    let splitName = '平均値';
+    if (elements.quadrantSplitType.value === 'median') {
+      splitName = '中央値';
+    } else if (elements.quadrantSplitType.value === 'geometric') {
+      splitName = (stats.geomX !== null && stats.geomY !== null) ? '幾何平均' : '平均(幾何不可)';
+    }
 
     if (elements.summaryContent) {
       elements.summaryContent.innerHTML = `
@@ -547,6 +552,15 @@ document.addEventListener('DOMContentLoaded', () => {
     ctrl.addEventListener('change', redrawChart);
   });
 
+  // 幾何平均選択時の警告通知
+  elements.quadrantSplitType.addEventListener('change', () => {
+    if (elements.quadrantSplitType.value === 'geometric' && state.currentStats) {
+      if (state.currentStats.geomX === null || state.currentStats.geomY === null) {
+        showToast('データに0以下の値が含まれているため、幾何平均の代わりに平均値を表示しています', 'info');
+      }
+    }
+  });
+
   [elements.q1Label, elements.q2Label, elements.q3Label, elements.q4Label].forEach(input => {
     input.addEventListener('input', redrawChart);
   });
@@ -656,12 +670,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const yKey = elements.selectY.value;
     const sign = reg.intercept >= 0 ? '+' : '-';
 
+    const geomXStr = s.geomX !== null ? s.geomX.toFixed(2) : '計算不可(<=0)';
+    const geomYStr = s.geomY !== null ? s.geomY.toFixed(2) : '計算不可(<=0)';
+
     let text = `【散布図集計サマリー】\n`;
     text += `タイトル: ${elements.chartTitle.value}\n`;
     text += `X軸: ${xKey} / Y軸: ${yKey}\n`;
     text += `サンプル数: ${s.totalCount}\n`;
-    text += `X軸: 平均=${s.meanX.toFixed(2)}, 中央値=${s.medianX.toFixed(2)}, 標準偏差=${s.stdX.toFixed(2)}\n`;
-    text += `Y軸: 平均=${s.meanY.toFixed(2)}, 中央値=${s.medianY.toFixed(2)}, 標準偏差=${s.stdY.toFixed(2)}\n`;
+    text += `X軸: 平均=${s.meanX.toFixed(2)}, 中央値=${s.medianX.toFixed(2)}, 幾何平均=${geomXStr}, 標準偏差=${s.stdX.toFixed(2)}\n`;
+    text += `Y軸: 平均=${s.meanY.toFixed(2)}, 中央値=${s.medianY.toFixed(2)}, 幾何平均=${geomYStr}, 標準偏差=${s.stdY.toFixed(2)}\n`;
     text += `相関係数 (r): ${reg.r.toFixed(4)}\n`;
     text += `決定係数 (R²): ${reg.r2.toFixed(4)}\n`;
     text += `1次回帰式: y = ${reg.slope.toFixed(4)}x ${sign} ${Math.abs(reg.intercept).toFixed(4)}\n\n`;

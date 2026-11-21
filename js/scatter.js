@@ -18,7 +18,7 @@ class ScatterPlot {
       pointRadius: 6,
       pointOpacity: 0.75,
       showQuadrant: true,
-      quadrantSplitType: 'mean', // 'mean' or 'median'
+      quadrantSplitType: 'mean', // 'mean', 'median', or 'geometric'
       showQuadrantBg: true,
       colorPointsByQuadrant: false,
       quadrantLabels: {
@@ -300,12 +300,32 @@ class ScatterPlot {
     const meanY = Stats.mean(yValues);
     const medianX = Stats.median(xValues);
     const medianY = Stats.median(yValues);
+    const geomX = Stats.geometricMean(xValues);
+    const geomY = Stats.geometricMean(yValues);
     const stdX = Stats.stdDev(xValues, meanX);
     const stdY = Stats.stdDev(yValues, meanY);
     const regression = Stats.linearRegression(xValues, yValues);
 
-    const splitX = this.options.quadrantSplitType === 'median' ? medianX : meanX;
-    const splitY = this.options.quadrantSplitType === 'median' ? medianY : meanY;
+    let splitX = meanX;
+    let splitY = meanY;
+    let splitTypeName = '平均';
+
+    if (this.options.quadrantSplitType === 'median') {
+      splitX = medianX;
+      splitY = medianY;
+      splitTypeName = '中央値';
+    } else if (this.options.quadrantSplitType === 'geometric') {
+      if (geomX !== null && geomY !== null) {
+        splitX = geomX;
+        splitY = geomY;
+        splitTypeName = '幾何平均';
+      } else {
+        // 0以下の値が含まれる場合は算術平均に安全にフォールバック
+        splitX = meanX;
+        splitY = meanY;
+        splitTypeName = '平均(幾何不可)';
+      }
+    }
 
     // 外れ値判定 (Zスコア > 2.0 または距離)
     validRows.forEach(r => {
@@ -677,7 +697,7 @@ class ScatterPlot {
         splitLabelX.setAttribute("fill", theme.axis);
         splitLabelX.setAttribute("font-size", "10");
         splitLabelX.setAttribute("font-weight", "600");
-        splitLabelX.textContent = `${this.options.quadrantSplitType === 'median' ? '中央値' : '平均'}X: ${splitX.toFixed(1)}`;
+        splitLabelX.textContent = `${splitTypeName}X: ${splitX.toFixed(1)}`;
         svg.appendChild(splitLabelX);
       }
 
@@ -701,7 +721,7 @@ class ScatterPlot {
         splitLabelY.setAttribute("fill", theme.axis);
         splitLabelY.setAttribute("font-size", "10");
         splitLabelY.setAttribute("font-weight", "600");
-        splitLabelY.textContent = `${this.options.quadrantSplitType === 'median' ? '中央値' : '平均'}Y: ${splitY.toFixed(1)}`;
+        splitLabelY.textContent = `${splitTypeName}Y: ${splitY.toFixed(1)}`;
         svg.appendChild(splitLabelY);
       }
 
@@ -1011,10 +1031,13 @@ class ScatterPlot {
       meanY,
       medianX,
       medianY,
+      geomX,
+      geomY,
       stdX,
       stdY,
       splitX,
       splitY,
+      splitTypeName,
       regression,
       quadrants: quadClass
     };
