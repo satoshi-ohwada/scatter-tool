@@ -164,11 +164,20 @@
         </div>
       </section>
 
-      <!-- 4. ラベル & 引き出し線 -->
+      <!-- 4. デザイン & ラベル -->
       <section class="panel-card">
         <div class="panel-card-title">
-          <span><span class="icon">🏷️</span>4. ラベル & 引き出し線</span>
-          <button id="btnResetLabels" class="btn btn-sm" title="手動移動したラベルの位置をリセットして自動配置に戻します">リセット</button>
+          <span><span class="icon">🎨</span>4. デザイン &amp; ラベル</span>
+          <button id="btnResetLabels" class="btn btn-sm" title="手動移動したラベルの位置をリセットして自動配置に戻します">位置リセット</button>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="selectTheme">カラーテーマ</label>
+          <select id="selectTheme" class="form-select">
+            <option value="modernNavy" selected>Modern Navy (ビジネス・標準)</option>
+            <option value="emerald">Fresh Emerald (爽快グリーン)</option>
+            <option value="vibrant">Vibrant Purple (高コントラスト)</option>
+            <option value="academic">Academic Monochrome (モノクロ・論文)</option>
+          </select>
         </div>
         <div class="form-group">
           <label class="form-label" for="selectLabelMode">ラベル表示対象</label>
@@ -181,28 +190,12 @@
             <option value="none">非表示 (ホバー時のみ表示)</option>
           </select>
         </div>
-        <label class="check-label">
-          <input type="checkbox" id="chkLeaderLines" checked>
-          <span>重なり自動回避 &amp; 引き出し線</span>
-        </label>
-        <p style="font-size: 10px; color: #64748b; margin-top: 4px;">
-          ※グラフ上のラベルはマウスドラッグで自由に位置を微調整できます。引き出し線も自動追従します。
-        </p>
-      </section>
-
-      <!-- 5. デザイン・スタイル -->
-      <section class="panel-card">
-        <div class="panel-card-title">
-          <span><span class="icon">🎨</span>5. デザイン・スタイル</span>
-        </div>
         <div class="form-group">
-          <label class="form-label" for="selectTheme">カラーテーマ</label>
-          <select id="selectTheme" class="form-select">
-            <option value="modernNavy" selected>Modern Navy (ビジネス・標準)</option>
-            <option value="emerald">Fresh Emerald (爽快グリーン)</option>
-            <option value="vibrant">Vibrant Purple (高コントラスト)</option>
-            <option value="academic">Academic Monochrome (モノクロ・論文)</option>
-          </select>
+          <label class="form-label">ラベル文字サイズ</label>
+          <div class="slider-group">
+            <input type="range" id="rangeFontSize" min="9" max="16" step="1" value="11">
+            <span id="valFontSize" class="slider-val">11px</span>
+          </div>
         </div>
         <div class="form-group">
           <label class="form-label">プロット点サイズ</label>
@@ -218,13 +211,9 @@
             <span id="valOpacity" class="slider-val">75%</span>
           </div>
         </div>
-        <div class="form-group">
-          <label class="form-label">ラベル文字サイズ</label>
-          <div class="slider-group">
-            <input type="range" id="rangeFontSize" min="9" max="16" step="1" value="11">
-            <span id="valFontSize" class="slider-val">11px</span>
-          </div>
-        </div>
+        <p style="font-size: 10px; color: #64748b; margin-top: 4px;">
+          ※グラフ上のラベルはマウスドラッグで自由に位置を微調整できます（引き出し線も自動追従）。
+        </p>
       </section>
 
     </aside>

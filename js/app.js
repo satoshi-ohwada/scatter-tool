@@ -53,7 +53,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ラベル設定
     selectLabelMode: document.getElementById('selectLabelMode'),
-    chkLeaderLines: document.getElementById('chkLeaderLines'),
     btnResetLabels: document.getElementById('btnResetLabels'),
 
     // スタイル設定
@@ -163,7 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
       showRegressionEquation: elements.chkRegressionEq.checked,
       showConfidenceInterval: elements.chkConfidence.checked,
       labelMode: elements.selectLabelMode.value,
-      showLeaderLines: elements.chkLeaderLines.checked,
+      showLeaderLines: true,
       onPointClick: (p, e) => {
         const rowId = p.id;
         if (state.labeledRowIds.has(rowId)) {
@@ -583,7 +582,6 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.chkRegressionEq,
     elements.chkConfidence,
     elements.selectLabelMode,
-    elements.chkLeaderLines,
     elements.selectTheme
   ].filter(Boolean).forEach(ctrl => {
     ctrl.addEventListener('change', redrawChart);
