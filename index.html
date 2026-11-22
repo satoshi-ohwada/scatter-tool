@@ -32,16 +32,39 @@
         <div class="panel-card-title">
           <span><span class="icon">📂</span>1. データ読み込み</span>
         </div>
-        <div id="dropZone" class="drop-zone">
-          <div class="drop-icon">📁</div>
-          <div class="drop-text">CSV / Excel をドラッグ＆ドロップ</div>
-          <div class="drop-sub">またはクリックしてファイル選択</div>
-          <input type="file" id="fileInput" accept=".csv,.tsv,.txt,.xlsx,.xls" style="display: none;">
+
+        <!-- 入力切替タブ -->
+        <div class="data-input-tabs">
+          <button type="button" id="tabBtnFile" class="data-tab-btn active">📁 ファイル読込</button>
+          <button type="button" id="tabBtnPaste" class="data-tab-btn">📋 コピペ貼り付け</button>
         </div>
+
+        <!-- ファイル選択ペイン -->
+        <div id="paneFile" class="data-input-pane active">
+          <div id="dropZone" class="drop-zone">
+            <div class="drop-icon">📁</div>
+            <div class="drop-text">CSV / Excel をドロップ</div>
+            <div class="drop-sub">またはクリックしてファイル選択</div>
+            <input type="file" id="fileInput" accept=".csv,.tsv,.txt,.xlsx,.xls" style="display: none;">
+          </div>
+        </div>
+
+        <!-- コピペ貼り付けペイン -->
+        <div id="panePaste" class="data-input-pane" style="display: none;">
+          <div class="sidebar-paste-container">
+            <textarea id="sidebarPasteArea" class="form-input sidebar-paste-textarea" placeholder="Excel等の表セルをコピー(Ctrl+C)して、ここに貼り付け(Ctrl+V)..."></textarea>
+            <div class="sidebar-paste-actions">
+              <button id="btnSidebarPasteClip" class="btn btn-xs" type="button" title="クリップボードから直接貼り付け">📋 クリップボード貼付</button>
+              <button id="btnSidebarApplyPaste" class="btn btn-xs btn-primary" type="button" title="入力内容をグラフに読み込み">読み込む</button>
+              <button id="btnSidebarClearPaste" class="btn btn-xs" type="button" title="入力をクリア">クリア</button>
+            </div>
+          </div>
+          <p class="sidebar-paste-hint">
+            ※Excelやスプレッドシートの表を貼り付けると自動で解析・描画されます。
+          </p>
+        </div>
+
         <div class="drop-buttons">
-          <button id="btnPaste" class="btn btn-sm btn-block" title="Excel等でコピーしたデータを直接貼り付け">
-            📋 コピペ取込
-          </button>
           <button id="btnSample" class="btn btn-sm btn-block" title="総務省・令和7年国勢調査 表Ⅰ-2-1 (都道府県別人口増減・密度) サンプルを読み込み">
             💡 サンプルデータ読込
           </button>
@@ -255,17 +278,48 @@
         </div>
         <div class="chart-wrapper">
           <div id="chartContainer" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
-            <div class="empty-state" id="emptyStateGuide" style="padding: 40px; max-width: 480px; line-height: 1.6; text-align: center;">
-              <div style="font-size: 42px; margin-bottom: 12px;">📊</div>
-              <div style="font-size: 16px; font-weight: 600; color: var(--text-main); margin-bottom: 8px;">データが読み込まれていません</div>
-              <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
-                左パネルの「ファイル選択」またはドラッグ＆ドロップでCSV / Excelを読み込んでください。<br>
-                「📋 コピペ取込」や下のボタンからも開始できます。
-              </div>
-              <div style="display: flex; gap: 10px; justify-content: center; margin-top: 8px;">
-                <button id="btnSampleEmpty" class="btn btn-primary btn-sm" style="padding: 8px 18px; font-weight: 600;" title="デモ用サンプルデータを読み込み">
-                  💡 デモデータを読み込む
-                </button>
+            <div class="empty-state" id="emptyStateGuide">
+              <div class="empty-guide-card">
+                <div class="empty-guide-icon">📊</div>
+                <h3 class="empty-guide-title">データが読み込まれていません</h3>
+                <p class="empty-guide-desc">Excelの表セルをコピー＆ペーストするか、CSV / Excelファイルを読み込んでください</p>
+
+                <div class="empty-action-grid">
+                  <!-- コピペ受入カード -->
+                  <div class="empty-action-box" id="emptyPasteBox" role="button" tabindex="0" title="ここをクリックして直接貼り付け">
+                    <div class="action-box-icon">📋</div>
+                    <div class="action-box-title">コピペで即時作成</div>
+                    <div class="action-box-sub">
+                      Excel等で表をコピーし、画面で
+                      <div class="shortcut-badge">
+                        <kbd>Ctrl</kbd> + <kbd>V</kbd>
+                      </div>
+                      を押して直接貼り付け
+                    </div>
+                    <button type="button" id="btnEmptyPasteDirect" class="btn btn-sm btn-secondary" style="margin-top: 8px;">
+                      📋 クリップボード貼付
+                    </button>
+                  </div>
+
+                  <!-- ファイル選択カード -->
+                  <div class="empty-action-box" id="emptyFileBox" role="button" tabindex="0" title="ファイルを選択またはドロップ">
+                    <div class="action-box-icon">📁</div>
+                    <div class="action-box-title">ファイルから読み込み</div>
+                    <div class="action-box-sub">
+                      CSV / Excel (.xlsx) ファイルを<br>ここにドラッグ＆ドロップ
+                    </div>
+                    <button type="button" id="btnEmptyFileSelect" class="btn btn-sm btn-secondary" style="margin-top: 8px;">
+                      📂 ファイルを選択
+                    </button>
+                  </div>
+                </div>
+
+                <div class="empty-guide-footer">
+                  <span class="text-muted" style="font-size: 11px;">まずは機能を試してみたい方：</span>
+                  <button id="btnSampleEmpty" class="btn btn-primary btn-sm" style="padding: 6px 14px; font-weight: 600;" title="デモ用サンプルデータを読み込み">
+                    💡 デモデータ（人口動態）を試す
+                  </button>
+                </div>
               </div>
             </div>
           </div>

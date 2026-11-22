@@ -24,6 +24,22 @@ document.addEventListener('DOMContentLoaded', () => {
     btnPaste: document.getElementById('btnPaste'),
     fileInfo: document.getElementById('fileInfo'),
 
+    // データ入力切替タブ・ペイン
+    tabBtnFile: document.getElementById('tabBtnFile'),
+    tabBtnPaste: document.getElementById('tabBtnPaste'),
+    paneFile: document.getElementById('paneFile'),
+    panePaste: document.getElementById('panePaste'),
+    sidebarPasteArea: document.getElementById('sidebarPasteArea'),
+    btnSidebarPasteClip: document.getElementById('btnSidebarPasteClip'),
+    btnSidebarApplyPaste: document.getElementById('btnSidebarApplyPaste'),
+    btnSidebarClearPaste: document.getElementById('btnSidebarClearPaste'),
+
+    // Empty State ガイド内要素
+    emptyPasteBox: document.getElementById('emptyPasteBox'),
+    emptyFileBox: document.getElementById('emptyFileBox'),
+    btnEmptyPasteDirect: document.getElementById('btnEmptyPasteDirect'),
+    btnEmptyFileSelect: document.getElementById('btnEmptyFileSelect'),
+
     // 列選択
     selectLabel: document.getElementById('selectLabel'),
     selectX: document.getElementById('selectX'),
@@ -463,22 +479,98 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // データ入力タブ切り替え (ファイル読込 / コピペ貼り付け)
+  function switchInputTab(tab) {
+    const isFile = tab === 'file';
+    if (elements.tabBtnFile) elements.tabBtnFile.classList.toggle('active', isFile);
+    if (elements.tabBtnPaste) elements.tabBtnPaste.classList.toggle('active', !isFile);
+    if (elements.paneFile) elements.paneFile.style.display = isFile ? 'block' : 'none';
+    if (elements.panePaste) elements.panePaste.style.display = !isFile ? 'block' : 'none';
+    if (!isFile && elements.sidebarPasteArea) {
+      setTimeout(() => elements.sidebarPasteArea.focus(), 60);
+    }
+  }
+
+  if (elements.tabBtnFile) {
+    elements.tabBtnFile.addEventListener('click', () => switchInputTab('file'));
+  }
+  if (elements.tabBtnPaste) {
+    elements.tabBtnPaste.addEventListener('click', () => switchInputTab('paste'));
+  }
+
+  // テキスト貼り付けデータの一括解析と取り込み
+  function importPastedText(text, sourceName = '貼り付けデータ') {
+    if (!text || text.trim() === '') {
+      showToast('貼り付けるテキストが空です', 'warning');
+      return false;
+    }
+    try {
+      const table = DataParser.parseCSVText(text);
+      if (!table || table.rows.length === 0) {
+        showToast('有効な表データが見つかりませんでした', 'warning');
+        return false;
+      }
+      applyTableData(table, sourceName);
+      showToast(`${sourceName}から ${table.totalCount} 件のデータを読み込みました`, 'success');
+      return true;
+    } catch (err) {
+      showToast(`貼り付けデータの解析に失敗しました: ${err.message}`, 'error');
+      return false;
+    }
+  }
+
+  // サイドバーのテキストエリアでのペースト・読み込み処理
+  if (elements.sidebarPasteArea) {
+    elements.sidebarPasteArea.addEventListener('paste', (e) => {
+      const clip = e.clipboardData || window.clipboardData;
+      if (!clip) return;
+      const text = clip.getData('text');
+      if (text && text.trim()) {
+        setTimeout(() => {
+          importPastedText(text, 'コピペデータ');
+        }, 30);
+      }
+    });
+  }
+
+  if (elements.btnSidebarApplyPaste) {
+    elements.btnSidebarApplyPaste.addEventListener('click', () => {
+      const text = elements.sidebarPasteArea ? elements.sidebarPasteArea.value : '';
+      importPastedText(text, '入力データ');
+    });
+  }
+
+  if (elements.btnSidebarClearPaste) {
+    elements.btnSidebarClearPaste.addEventListener('click', () => {
+      if (elements.sidebarPasteArea) {
+        elements.sidebarPasteArea.value = '';
+        elements.sidebarPasteArea.focus();
+      }
+    });
+  }
+
+  if (elements.btnSidebarPasteClip) {
+    elements.btnSidebarPasteClip.addEventListener('click', pasteFromClipboard);
+  }
+
   // クリップボードからの貼り付け解析 (権限ブロック・非セキュア環境でも確実に動くモーダルフォールバック)
   async function pasteFromClipboard() {
     if (navigator.clipboard && navigator.clipboard.readText) {
       try {
         const text = await navigator.clipboard.readText();
         if (text && text.trim() !== '') {
-          const table = DataParser.parseCSVText(text);
-          applyTableData(table, 'クリップボード');
-          showToast(`クリップボードから ${table.totalCount} 件のデータを読み込みました`, 'success');
-          return;
+          if (elements.sidebarPasteArea) {
+            elements.sidebarPasteArea.value = text;
+          }
+          const success = importPastedText(text, 'クリップボード');
+          if (success) return;
         }
       } catch (err) {
         console.warn('Clipboard readText failed or permission denied, falling back to paste modal:', err);
       }
     }
-    // 権限がブロックされた場合、ブラウザ非対応、または空の場合は貼り付けモーダルを提示
+    // 権限がブロックされた場合、ブラウザ非対応、または空の場合はサイドバーのコピペタブを開いてフォーカス
+    switchInputTab('paste');
     openPasteModal();
   }
 
@@ -495,27 +587,75 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // ドラッグ＆ドロップ設定
-  elements.dropZone.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    elements.dropZone.classList.add('drag-over');
-  });
+  // ドラッグ＆ドロップ設定 (サイドバー)
+  if (elements.dropZone) {
+    elements.dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      elements.dropZone.classList.add('drag-over');
+    });
 
-  elements.dropZone.addEventListener('dragleave', () => {
-    elements.dropZone.classList.remove('drag-over');
-  });
+    elements.dropZone.addEventListener('dragleave', () => {
+      elements.dropZone.classList.remove('drag-over');
+    });
 
-  elements.dropZone.addEventListener('drop', (e) => {
-    e.preventDefault();
-    elements.dropZone.classList.remove('drag-over');
-    if (e.dataTransfer && e.dataTransfer.files.length > 0) {
-      handleFiles(e.dataTransfer.files);
-    }
-  });
+    elements.dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      elements.dropZone.classList.remove('drag-over');
+      if (e.dataTransfer && e.dataTransfer.files.length > 0) {
+        handleFiles(e.dataTransfer.files);
+      }
+    });
 
-  elements.dropZone.addEventListener('click', () => {
-    elements.fileInput.click();
-  });
+    elements.dropZone.addEventListener('click', () => {
+      elements.fileInput.click();
+    });
+  }
+
+  // ドラッグ＆ドロップ & クリック設定 (Empty State 内のファイルボックス)
+  if (elements.emptyFileBox) {
+    elements.emptyFileBox.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      elements.emptyFileBox.classList.add('drag-over');
+    });
+
+    elements.emptyFileBox.addEventListener('dragleave', () => {
+      elements.emptyFileBox.classList.remove('drag-over');
+    });
+
+    elements.emptyFileBox.addEventListener('drop', (e) => {
+      e.preventDefault();
+      elements.emptyFileBox.classList.remove('drag-over');
+      if (e.dataTransfer && e.dataTransfer.files.length > 0) {
+        handleFiles(e.dataTransfer.files);
+      }
+    });
+
+    elements.emptyFileBox.addEventListener('click', () => {
+      elements.fileInput.click();
+    });
+  }
+
+  if (elements.btnEmptyFileSelect) {
+    elements.btnEmptyFileSelect.addEventListener('click', (e) => {
+      e.stopPropagation();
+      elements.fileInput.click();
+    });
+  }
+
+  // Empty State 内のコピペボックス設定
+  if (elements.emptyPasteBox) {
+    elements.emptyPasteBox.addEventListener('click', () => {
+      switchInputTab('paste');
+      pasteFromClipboard();
+    });
+  }
+
+  if (elements.btnEmptyPasteDirect) {
+    elements.btnEmptyPasteDirect.addEventListener('click', (e) => {
+      e.stopPropagation();
+      pasteFromClipboard();
+    });
+  }
 
   elements.fileInput.addEventListener('change', (e) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -526,24 +666,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ショートカット: 画面全体へのペースト (Ctrl+V)
   window.addEventListener('paste', (e) => {
+    // 別の入力フィールドにフォーカスがある時はそちらの標準挙動を妨げない
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
     const clip = e.clipboardData || window.clipboardData;
     if (!clip) return;
     const text = clip.getData('text');
     if (text && text.trim()) {
-      try {
-        const table = DataParser.parseCSVText(text);
-        applyTableData(table, '貼り付けデータ');
-        showToast(`データを貼り付けました (${table.totalCount}件)`, 'success');
-      } catch (err) {
-        showToast(`貼り付けデータの解析に失敗しました: ${err.message}`, 'warning');
+      if (elements.sidebarPasteArea) {
+        elements.sidebarPasteArea.value = text;
       }
+      importPastedText(text, '貼り付けデータ');
     }
   });
 
   elements.btnSample.addEventListener('click', loadSampleData);
   if (elements.btnSampleEmpty) elements.btnSampleEmpty.addEventListener('click', loadSampleData);
-  elements.btnPaste.addEventListener('click', pasteFromClipboard);
+  if (elements.btnPaste) elements.btnPaste.addEventListener('click', pasteFromClipboard);
 
   // 列選択変更イベント
   elements.selectLabel.addEventListener('change', redrawChart);
