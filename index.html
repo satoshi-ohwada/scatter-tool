@@ -102,11 +102,14 @@
           <div class="form-group">
             <label class="form-label" for="quadrantSplitType">分割基準</label>
             <select id="quadrantSplitType" class="form-select">
-              <option value="mean" selected>平均値 (X平均・Y平均)</option>
-              <option value="median">中央値 (X中央値・Y中央値)</option>
-              <option value="geometric">幾何平均 (正の値のみ)</option>
-              <option value="weighted">加重平均 (ウェイト指定)</option>
+              <option value="mean" selected>平均値 (基本・全体バランス)</option>
+              <option value="median">中央値 (外れ値対策・上下半々)</option>
+              <option value="geometric">幾何平均 (比率・成長率の分析)</option>
+              <option value="weighted">加重平均 (売上・人口等の規模重心)</option>
             </select>
+            <div id="quadrantSplitHint" style="font-size: 11px; color: var(--text-muted); margin-top: 4px; line-height: 1.4;">
+              💡 基本・標準：全体バランスを把握したいときに最適
+            </div>
           </div>
           <div class="form-group" id="groupQuadrantWeight" style="display: none; margin-top: 6px;">
             <label class="form-label" for="selectQuadrantWeight">加重の基準属性 (ウェイト)</label>
