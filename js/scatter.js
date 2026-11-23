@@ -26,6 +26,7 @@ class ScatterPlot {
       clusterK: 3,
       showCentroids: true,
       showClusterHulls: true,
+      showClusterLabels: true,
       clusterAspect1to1: true,
       clusterColors: ['#005aff', '#ea580c', '#16a34a', '#9333ea', '#d97706', '#0891b2', '#e11d48', '#4b5563'],
       quadrantLabels: {
@@ -518,11 +519,12 @@ class ScatterPlot {
     // Y軸タイトル(14px) + 余白(12px) + 目盛り数値幅 + 目盛り線(5px) + 余白
     const dynamicMarginLeft = Math.max(56, yTickTextWidth + 30);
 
-    // タイトルや回帰式バッジの有無に応じて上部余白を最適化 (重なりを防止しグラフを最大化)
+    // タイトルや回帰式バッジ、クラスター凡例の有無に応じて上部余白を最適化 (重なりを防止しグラフを最大化)
     const hasTitle = Boolean(this.options.title && this.options.title.trim());
     const hasRegEq = Boolean(this.options.showRegression && this.options.showRegressionEquation);
+    const hasClusterLegend = Boolean(isCluster && this.options.showClusterLabels !== false);
     const margin = {
-      top: hasTitle ? 42 : (hasRegEq ? 34 : 22),
+      top: hasTitle ? 44 : ((hasRegEq || hasClusterLegend) ? 34 : 22),
       right: 28,
       bottom: 54, // 横軸目盛り数値と横軸タイトルの重なりを完全防止するクリアランス (42 -> 54)
       left: dynamicMarginLeft
@@ -585,6 +587,7 @@ class ScatterPlot {
         const screenPts = c.points.map(p => ({ x: toPx(p.x), y: toPy(p.y) }));
         const ell = Stats.clusterEllipse(screenPts);
         if (!ell) return;
+        c.ellipse = ell;
 
         const ellipseEl = document.createElementNS(svgNS, "ellipse");
         ellipseEl.setAttribute("cx", ell.cx.toFixed(1));
@@ -1037,10 +1040,11 @@ class ScatterPlot {
     });
     svg.appendChild(pointsGroup);
 
-    // 8.5 クラスター重心 (Centroid) の描画
+    // 8.5 クラスター重心 (Centroid) の描画 (プロット点を隠さない洗練された細線十字クロスヘア)
     if (isCluster && this.options.showCentroids && clusterResult) {
       const centroidGroup = document.createElementNS(svgNS, "g");
       centroidGroup.setAttribute("class", "cluster-centroids");
+      centroidGroup.setAttribute("pointer-events", "none"); // 下のデータ点のホバー・クリックを妨げない
       const cColors = this.options.clusterColors || ['#005aff', '#ea580c', '#16a34a', '#9333ea', '#d97706', '#0891b2', '#e11d48', '#4b5563'];
 
       clusterResult.clusters.forEach(c => {
@@ -1050,34 +1054,138 @@ class ScatterPlot {
         const color = cColors[c.id % cColors.length];
 
         const g = document.createElementNS(svgNS, "g");
-        g.setAttribute("transform", `translate(${cPx}, ${cPy})`);
+        g.setAttribute("transform", `translate(${cPx.toFixed(1)}, ${cPy.toFixed(1)})`);
 
-        // 外側の白いハローリング
-        const halo = document.createElementNS(svgNS, "circle");
-        halo.setAttribute("r", "11");
-        halo.setAttribute("fill", "#ffffff");
-        halo.setAttribute("stroke", color);
-        halo.setAttribute("stroke-width", "2.5");
-        g.appendChild(halo);
+        // プロットを覆い隠さない細い十字マーク (Crosshair)
+        const arm = 5;
+        const cross = document.createElementNS(svgNS, "path");
+        cross.setAttribute("d", `M ${-arm} 0 L ${arm} 0 M 0 ${-arm} L 0 ${arm}`);
+        cross.setAttribute("stroke", color);
+        cross.setAttribute("stroke-width", "1.8");
+        cross.setAttribute("stroke-linecap", "round");
+        g.appendChild(cross);
 
-        // 重心テキスト (C1, C2...)
-        const label = document.createElementNS(svgNS, "text");
-        label.setAttribute("text-anchor", "middle");
-        label.setAttribute("dy", "0.34em");
-        label.setAttribute("font-size", "9");
-        label.setAttribute("font-weight", "800");
-        label.setAttribute("fill", color);
-        label.textContent = `C${c.id + 1}`;
-        g.appendChild(label);
-
-        // ツールチップ
-        const tip = document.createElementNS(svgNS, "title");
-        tip.textContent = `クラスター${c.id + 1} 重心 (Centroid)\nZx: ${c.centroid.x >= 0 ? '+' : ''}${c.centroid.x.toFixed(2)}σ\nZy: ${c.centroid.y >= 0 ? '+' : ''}${c.centroid.y.toFixed(2)}σ\n所属点数: ${c.points.length}件`;
-        g.appendChild(tip);
+        // 中心極小ドット
+        const dot = document.createElementNS(svgNS, "circle");
+        dot.setAttribute("r", "1.5");
+        dot.setAttribute("fill", "#ffffff");
+        dot.setAttribute("stroke", color);
+        dot.setAttribute("stroke-width", "1");
+        g.appendChild(dot);
 
         centroidGroup.appendChild(g);
       });
       svg.appendChild(centroidGroup);
+    }
+
+    // 8.6 クラスター識別ラベル (C1, C2...) および凡例の描画
+    // プロット点密集域の中心を避け、楕円外周境界上端や右上に配置して重なりを完全防止
+    if (isCluster && (this.options.showClusterLabels !== false) && clusterResult) {
+      const labelLegendGroup = document.createElementNS(svgNS, "g");
+      labelLegendGroup.setAttribute("class", "cluster-labels-legend");
+      const cColors = this.options.clusterColors || ['#005aff', '#ea580c', '#16a34a', '#9333ea', '#d97706', '#0891b2', '#e11d48', '#4b5563'];
+
+      // (1) 楕円外周（上端境界）のバッジ
+      clusterResult.clusters.forEach(c => {
+        if (!c.centroid) return;
+        const color = cColors[c.id % cColors.length];
+        const cPx = toPx(c.centroid.x);
+        const cPy = toPy(c.centroid.y);
+
+        let badgeX, badgeY;
+        const ell = c.ellipse;
+        if (ell && this.options.showClusterHulls) {
+          // 楕円の上端境界座標を算出
+          const rad = (ell.angleDeg || 0) * Math.PI / 180;
+          const sinT = Math.sin(rad);
+          const cosT = Math.cos(rad);
+          const yRadius = Math.sqrt((ell.rx * sinT) ** 2 + (ell.ry * cosT) ** 2);
+          const xRadiusOffset = yRadius > 0.001 ? -((ell.rx ** 2 - ell.ry ** 2) * sinT * cosT) / yRadius : 0;
+          badgeX = ell.cx + xRadiusOffset;
+          badgeY = ell.cy - yRadius - 7;
+        } else {
+          // 楕円がない場合は重心から斜め上にオフセット
+          badgeX = cPx + 12;
+          badgeY = cPy - 12;
+        }
+
+        // グラフ枠内に安全に収めるクリッピング
+        badgeX = Math.max(margin.left + 16, Math.min(margin.left + plotW - 16, badgeX));
+        badgeY = Math.max(margin.top + 8, Math.min(margin.top + plotH - 8, badgeY));
+
+        const bg = document.createElementNS(svgNS, "g");
+        bg.setAttribute("transform", `translate(${badgeX.toFixed(1)}, ${badgeY.toFixed(1)})`);
+
+        // 小さな角丸ピルバッジ
+        const pillW = 24;
+        const pillH = 15;
+        const pillRect = document.createElementNS(svgNS, "rect");
+        pillRect.setAttribute("x", (-pillW / 2).toFixed(1));
+        pillRect.setAttribute("y", (-pillH / 2).toFixed(1));
+        pillRect.setAttribute("width", pillW);
+        pillRect.setAttribute("height", pillH);
+        pillRect.setAttribute("rx", "4");
+        pillRect.setAttribute("ry", "4");
+        pillRect.setAttribute("fill", "#ffffff");
+        pillRect.setAttribute("fill-opacity", "0.92");
+        pillRect.setAttribute("stroke", color);
+        pillRect.setAttribute("stroke-width", "1.2");
+        bg.appendChild(pillRect);
+
+        const txt = document.createElementNS(svgNS, "text");
+        txt.setAttribute("text-anchor", "middle");
+        txt.setAttribute("dy", "0.34em");
+        txt.setAttribute("font-size", "9.5");
+        txt.setAttribute("font-weight", "800");
+        txt.setAttribute("fill", color);
+        txt.textContent = `C${c.id + 1}`;
+        bg.appendChild(txt);
+
+        // ツールチップ
+        const tip = document.createElementNS(svgNS, "title");
+        tip.textContent = `クラスター${c.id + 1}\n所属データ数: ${c.points ? c.points.length : 0}件\n重心 Zx: ${c.centroid.x >= 0 ? '+' : ''}${c.centroid.x.toFixed(2)}σ, Zy: ${c.centroid.y >= 0 ? '+' : ''}${c.centroid.y.toFixed(2)}σ`;
+        bg.appendChild(tip);
+
+        labelLegendGroup.appendChild(bg);
+      });
+
+      // (2) グラフ上部右側のコンパクトな凡例 (Legend Bar)
+      let legendRightX = margin.left + plotW;
+      const legendY = hasTitle ? (margin.top - 8) : (margin.top - 12);
+      
+      [...clusterResult.clusters].reverse().forEach(c => {
+        const color = cColors[c.id % cColors.length];
+        const count = c.points ? c.points.length : 0;
+        const labelText = `C${c.id + 1} (${count})`;
+        const itemW = labelText.length * 6.0 + 18;
+        legendRightX -= itemW;
+
+        if (legendRightX >= margin.left) {
+          const legItem = document.createElementNS(svgNS, "g");
+          legItem.setAttribute("transform", `translate(${legendRightX.toFixed(1)}, ${legendY})`);
+
+          const legDot = document.createElementNS(svgNS, "circle");
+          legDot.setAttribute("cx", "5");
+          legDot.setAttribute("cy", "-3");
+          legDot.setAttribute("r", "3.5");
+          legDot.setAttribute("fill", color);
+          legItem.appendChild(legDot);
+
+          const legTxt = document.createElementNS(svgNS, "text");
+          legTxt.setAttribute("x", "12");
+          legTxt.setAttribute("y", "0");
+          legTxt.setAttribute("font-size", "10");
+          legTxt.setAttribute("font-weight", "600");
+          legTxt.setAttribute("fill", "#475569");
+          legTxt.textContent = labelText;
+          legItem.appendChild(legTxt);
+
+          labelLegendGroup.appendChild(legItem);
+          legendRightX -= 8; // 項目間余白
+        }
+      });
+
+      svg.appendChild(labelLegendGroup);
     }
 
     // 9. ラベルの描画グループ (最前面・ドラッグ可能)
