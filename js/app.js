@@ -68,6 +68,16 @@ document.addEventListener('DOMContentLoaded', () => {
     q3Label: document.getElementById('q3Label'),
     q4Label: document.getElementById('q4Label'),
 
+    // クラスター分析
+    chkClusterMode: document.getElementById('chkClusterMode'),
+    clusterOptions: document.getElementById('clusterOptions'),
+    badgeOptimalK: document.getElementById('badgeOptimalK'),
+    inputClusterK: document.getElementById('inputClusterK'),
+    btnClusterMinus: document.getElementById('btnClusterMinus'),
+    btnClusterPlus: document.getElementById('btnClusterPlus'),
+    chkShowCentroids: document.getElementById('chkShowCentroids'),
+    chkShowHulls: document.getElementById('chkShowHulls'),
+
     // ラベル設定
     selectLabelMode: document.getElementById('selectLabelMode'),
     btnResetLabels: document.getElementById('btnResetLabels'),
@@ -178,6 +188,10 @@ document.addEventListener('DOMContentLoaded', () => {
       showRegression: elements.chkRegression.checked,
       showRegressionEquation: elements.chkRegressionEq.checked,
       showConfidenceInterval: elements.chkConfidence.checked,
+      clusterMode: elements.chkClusterMode ? elements.chkClusterMode.checked : false,
+      clusterK: elements.inputClusterK ? parseInt(elements.inputClusterK.value, 10) || 3 : 3,
+      showCentroids: elements.chkShowCentroids ? elements.chkShowCentroids.checked : true,
+      showClusterHulls: elements.chkShowHulls ? elements.chkShowHulls.checked : true,
       labelMode: elements.selectLabelMode.value,
       showLeaderLines: true,
       onPointClick: (p, e) => {
@@ -231,11 +245,86 @@ document.addEventListener('DOMContentLoaded', () => {
     updateSummaryDisplay(state.currentStats, xKey, yKey);
   }
 
+  // 最適クラスタ数 (k) の自動判定とUI反映
+  function updateOptimalClusterK() {
+    if (!state.tableData || !elements.badgeOptimalK) return;
+    const xKey = elements.selectX.value;
+    const yKey = elements.selectY.value;
+    if (!xKey || !yKey) return;
+
+    const validPts = [];
+    state.tableData.rows.forEach((r, idx) => {
+      const x = r[xKey];
+      const y = r[yKey];
+      if (typeof x === 'number' && !isNaN(x) && typeof y === 'number' && !isNaN(y)) {
+        validPts.push({ id: typeof r._rowId === 'number' ? r._rowId : idx, x, y });
+      }
+    });
+
+    if (validPts.length < 4) {
+      elements.badgeOptimalK.textContent = '推奨: k = 2';
+      return;
+    }
+
+    const zx = Stats.standardize(validPts.map(p => p.x));
+    const zy = Stats.standardize(validPts.map(p => p.y));
+    const zPts = validPts.map((p, i) => ({ id: p.id, x: zx[i], y: zy[i] }));
+
+    const opt = Stats.findOptimalK(zPts, 2, 6);
+    elements.badgeOptimalK.textContent = `推奨: k = ${opt.optimalK}`;
+    if (elements.inputClusterK && !elements.inputClusterK.dataset.userModified) {
+      elements.inputClusterK.value = opt.optimalK;
+    }
+  }
+
   // 統計サマリーのHTML表示更新 (右下ホバーウィジェット)
   function updateSummaryDisplay(stats, xKey, yKey) {
     if (!stats) {
       if (elements.summaryContent) {
         elements.summaryContent.innerHTML = '<span class="text-muted">データが読み込まれていません。</span>';
+      }
+      return;
+    }
+
+    if (stats.isCluster && stats.clusterResult) {
+      const cColors = ['#005aff', '#ea580c', '#16a34a', '#9333ea', '#d97706', '#0891b2', '#e11d48', '#4b5563'];
+      let clusterBadges = '<div class="cluster-counts" style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px;">';
+      stats.clusterResult.clusters.forEach(c => {
+        const color = cColors[c.id % cColors.length];
+        clusterBadges += `<span class="c-badge" style="background:${color}18; color:${color}; border:1px solid ${color}55; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:700;">C${c.id + 1}: ${c.points.length}件</span>`;
+      });
+      clusterBadges += '</div>';
+
+      if (elements.summaryContent) {
+        elements.summaryContent.innerHTML = `
+          <div class="summary-grid">
+            <div class="summary-item">
+              <span class="summary-label">サンプル数:</span>
+              <span class="summary-val">${stats.totalCount}件</span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-label">クラスター数:</span>
+              <span class="summary-val text-primary font-bold">k = ${stats.clusterResult.clusters.length}</span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-label">X平均 (生値):</span>
+              <span class="summary-val">${stats.meanX.toFixed(1)}</span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-label">X標準偏差 (σ):</span>
+              <span class="summary-val">${stats.stdX.toFixed(1)}</span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-label">Y平均 (生値):</span>
+              <span class="summary-val">${stats.meanY.toFixed(1)}</span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-label">Y標準偏差 (σ):</span>
+              <span class="summary-val">${stats.stdY.toFixed(1)}</span>
+            </div>
+          </div>
+          ${clusterBadges}
+        `;
       }
       return;
     }
@@ -367,6 +456,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // モーダル内の列セレクタも同期
     syncModalColumnSelectors();
+
+    // クラスター適正数の自動判定
+    updateOptimalClusterK();
 
     showToast(`データを読み込みました (${parsedTable.totalCount}件)`, 'success');
     redrawChart();
@@ -688,11 +780,13 @@ document.addEventListener('DOMContentLoaded', () => {
   elements.selectX.addEventListener('change', () => {
     elements.xTitle.value = elements.selectX.value;
     elements.chartTitle.value = `${elements.selectY.value} vs ${elements.selectX.value}`;
+    updateOptimalClusterK();
     redrawChart();
   });
   elements.selectY.addEventListener('change', () => {
     elements.yTitle.value = elements.selectY.value;
     elements.chartTitle.value = `${elements.selectY.value} vs ${elements.selectX.value}`;
+    updateOptimalClusterK();
     redrawChart();
   });
 
@@ -736,7 +830,9 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.chkRegressionEq,
     elements.chkConfidence,
     elements.selectLabelMode,
-    elements.selectTheme
+    elements.selectTheme,
+    elements.chkShowCentroids,
+    elements.chkShowHulls
   ].filter(Boolean).forEach(ctrl => {
     ctrl.addEventListener('change', redrawChart);
   });
@@ -755,6 +851,45 @@ document.addEventListener('DOMContentLoaded', () => {
   [elements.q1Label, elements.q2Label, elements.q3Label, elements.q4Label].forEach(input => {
     input.addEventListener('input', redrawChart);
   });
+
+  // クラスター分析モード切り替え & ステッパー制御
+  if (elements.chkClusterMode) {
+    elements.chkClusterMode.addEventListener('change', () => {
+      const isEnabled = elements.chkClusterMode.checked;
+      if (elements.clusterOptions) {
+        elements.clusterOptions.style.display = isEnabled ? 'block' : 'none';
+      }
+      if (isEnabled) {
+        updateOptimalClusterK();
+      }
+      redrawChart();
+    });
+  }
+
+  const handleClusterKChange = (delta) => {
+    if (!elements.inputClusterK) return;
+    let k = parseInt(elements.inputClusterK.value, 10) || 3;
+    k = Math.max(2, Math.min(8, k + delta));
+    elements.inputClusterK.value = k;
+    elements.inputClusterK.dataset.userModified = 'true';
+    redrawChart();
+  };
+
+  if (elements.btnClusterMinus) {
+    elements.btnClusterMinus.addEventListener('click', () => handleClusterKChange(-1));
+  }
+  if (elements.btnClusterPlus) {
+    elements.btnClusterPlus.addEventListener('click', () => handleClusterKChange(1));
+  }
+  if (elements.inputClusterK) {
+    elements.inputClusterK.addEventListener('change', () => {
+      let k = parseInt(elements.inputClusterK.value, 10) || 3;
+      k = Math.max(2, Math.min(8, k));
+      elements.inputClusterK.value = k;
+      elements.inputClusterK.dataset.userModified = 'true';
+      redrawChart();
+    });
+  }
 
   // スライダー変更イベント
   elements.rangePointSize.addEventListener('input', (e) => {
@@ -870,20 +1005,32 @@ document.addEventListener('DOMContentLoaded', () => {
     text += `タイトル: ${elements.chartTitle.value}\n`;
     text += `X軸: ${xKey} / Y軸: ${yKey}\n`;
     text += `サンプル数: ${s.totalCount}\n`;
-    text += `X軸: 平均=${s.meanX.toFixed(2)}, 中央値=${s.medianX.toFixed(2)}, 幾何平均=${geomXStr}${weightedXStr}, 標準偏差=${s.stdX.toFixed(2)}\n`;
-    text += `Y軸: 平均=${s.meanY.toFixed(2)}, 中央値=${s.medianY.toFixed(2)}, 幾何平均=${geomYStr}${weightedYStr}, 標準偏差=${s.stdY.toFixed(2)}\n`;
-    text += `相関係数 (r): ${reg.r.toFixed(4)}\n`;
-    text += `決定係数 (R²): ${reg.r2.toFixed(4)}\n`;
-    text += `1次回帰式: y = ${reg.slope.toFixed(4)}x ${sign} ${Math.abs(reg.intercept).toFixed(4)}\n\n`;
 
-    text += `【第1象限 (${elements.q1Label.value})】 ${s.quadrants.q1.length}件: `;
-    text += s.quadrants.q1.map(r => r._name).join(', ') + '\n';
-    text += `【第2象限 (${elements.q2Label.value})】 ${s.quadrants.q2.length}件: `;
-    text += s.quadrants.q2.map(r => r._name).join(', ') + '\n';
-    text += `【第3象限 (${elements.q3Label.value})】 ${s.quadrants.q3.length}件: `;
-    text += s.quadrants.q3.map(r => r._name).join(', ') + '\n';
-    text += `【第4象限 (${elements.q4Label.value})】 ${s.quadrants.q4.length}件: `;
-    text += s.quadrants.q4.map(r => r._name).join(', ') + '\n';
+    if (s.isCluster && s.clusterResult) {
+      text += `分析モード: クラスター分析 (K-Means, k=${s.clusterResult.clusters.length})\n`;
+      text += `X軸: 平均=${s.meanX.toFixed(2)}, 標準偏差=${s.stdX.toFixed(2)}\n`;
+      text += `Y軸: 平均=${s.meanY.toFixed(2)}, 標準偏差=${s.stdY.toFixed(2)}\n\n`;
+
+      s.clusterResult.clusters.forEach(c => {
+        text += `【クラスター${c.id + 1}】 ${c.points.length}件 (重心: Zx=${c.centroid.x >= 0 ? '+' : ''}${c.centroid.x.toFixed(2)}σ, Zy=${c.centroid.y >= 0 ? '+' : ''}${c.centroid.y.toFixed(2)}σ):\n`;
+        text += c.points.map(p => p.name).join(', ') + '\n';
+      });
+    } else {
+      text += `X軸: 平均=${s.meanX.toFixed(2)}, 中央値=${s.medianX.toFixed(2)}, 幾何平均=${geomXStr}${weightedXStr}, 標準偏差=${s.stdX.toFixed(2)}\n`;
+      text += `Y軸: 平均=${s.meanY.toFixed(2)}, 中央値=${s.medianY.toFixed(2)}, 幾何平均=${geomYStr}${weightedYStr}, 標準偏差=${s.stdY.toFixed(2)}\n`;
+      text += `相関係数 (r): ${reg.r.toFixed(4)}\n`;
+      text += `決定係数 (R²): ${reg.r2.toFixed(4)}\n`;
+      text += `1次回帰式: y = ${reg.slope.toFixed(4)}x ${sign} ${Math.abs(reg.intercept).toFixed(4)}\n\n`;
+
+      text += `【第1象限 (${elements.q1Label.value})】 ${s.quadrants.q1.length}件: `;
+      text += s.quadrants.q1.map(r => r._name).join(', ') + '\n';
+      text += `【第2象限 (${elements.q2Label.value})】 ${s.quadrants.q2.length}件: `;
+      text += s.quadrants.q2.map(r => r._name).join(', ') + '\n';
+      text += `【第3象限 (${elements.q3Label.value})】 ${s.quadrants.q3.length}件: `;
+      text += s.quadrants.q3.map(r => r._name).join(', ') + '\n';
+      text += `【第4象限 (${elements.q4Label.value})】 ${s.quadrants.q4.length}件: `;
+      text += s.quadrants.q4.map(r => r._name).join(', ') + '\n';
+    }
 
     try {
       await navigator.clipboard.writeText(text);

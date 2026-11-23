@@ -242,6 +242,45 @@
         </p>
       </section>
 
+      <!-- 5. クラスター分析 -->
+      <section class="panel-card">
+        <div class="panel-card-title">
+          <span><span class="icon">🔬</span>5. クラスター分析</span>
+        </div>
+        <label class="check-label" style="font-weight: 600;">
+          <input type="checkbox" id="chkClusterMode">
+          <span>クラスタリング表示を有効化</span>
+        </label>
+        
+        <div id="clusterOptions" class="sub-options" style="display: none; margin-top: 8px;">
+          <div class="form-group">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <label class="form-label" style="margin: 0;" for="inputClusterK">クラスター数 (k)</label>
+              <span id="badgeOptimalK" class="pill-badge" style="background: #e0f2fe; color: #0284c7; font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 4px;">
+                推奨: k = 3
+              </span>
+            </div>
+            <div class="stepper-group" style="display: flex; gap: 6px; align-items: center;">
+              <button type="button" id="btnClusterMinus" class="btn btn-sm" style="flex: 1; font-weight: 700; padding: 4px;">−</button>
+              <input type="number" id="inputClusterK" class="form-input" min="2" max="8" value="3" style="width: 54px; text-align: center; font-weight: 700; padding: 4px 2px;">
+              <button type="button" id="btnClusterPlus" class="btn btn-sm" style="flex: 1; font-weight: 700; padding: 4px;">＋</button>
+            </div>
+            <p style="font-size: 10px; color: #64748b; margin-top: 4px;">
+              ※各軸を標準化(Zスコア)してK-Means法で分類。シルエット係数により適正数を自動判定。
+            </p>
+          </div>
+
+          <label class="check-label" style="font-size: 11px; font-weight: normal; margin-top: 4px;">
+            <input type="checkbox" id="chkShowCentroids" checked>
+            <span>クラスター重心 (中心点) をプロット</span>
+          </label>
+          <label class="check-label" style="font-size: 11px; font-weight: normal; margin-top: 2px;">
+            <input type="checkbox" id="chkShowHulls" checked>
+            <span>グループ範囲を半透明領域(凸包)で囲む</span>
+          </label>
+        </div>
+      </section>
+
     </aside>
 
     <!-- 右メイン: グラフプレビュー & サマリー -->

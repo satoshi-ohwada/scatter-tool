@@ -22,6 +22,11 @@ class ScatterPlot {
       quadrantWeightKey: null,
       showQuadrantBg: true,
       colorPointsByQuadrant: false,
+      clusterMode: false,
+      clusterK: 3,
+      showCentroids: true,
+      showClusterHulls: true,
+      clusterColors: ['#005aff', '#ea580c', '#16a34a', '#9333ea', '#d97706', '#0891b2', '#e11d48', '#4b5563'],
       quadrantLabels: {
         q1: '第1象限 (高X・高Y)',
         q2: '第2象限 (低X・高Y)',
@@ -392,12 +397,28 @@ class ScatterPlot {
       }
     }
 
-    // 外れ値判定 (Zスコア > 2.0 または距離)
+    // Zスコア標準化
     validRows.forEach(r => {
-      const zX = stdX > 0 ? Math.abs(r._x - meanX) / stdX : 0;
-      const zY = stdY > 0 ? Math.abs(r._y - meanY) / stdY : 0;
-      r._isOutlier = Math.hypot(zX, zY) >= 2.0;
+      r._zx = stdX > 0 ? (r._x - meanX) / stdX : 0;
+      r._zy = stdY > 0 ? (r._y - meanY) / stdY : 0;
+      r._isOutlier = Math.hypot(r._zx, r._zy) >= 2.0;
     });
+
+    // クラスター分析の実行 (clusterMode時)
+    const isCluster = Boolean(this.options.clusterMode);
+    let clusterResult = null;
+    if (isCluster) {
+      const clusterK = Math.max(2, Math.min(8, parseInt(this.options.clusterK, 10) || 3));
+      const clusterPts = validRows.map(r => ({ id: r._id, x: r._zx, y: r._zy, name: r._name }));
+      clusterResult = Stats.kMeans(clusterPts, clusterK);
+      validRows.forEach(r => {
+        r._clusterId = clusterResult.assignments.get(r._id) ?? 0;
+      });
+      // クラスターモード時は原点(0,0)に平均十字線を配置
+      splitX = 0;
+      splitY = 0;
+      splitTypeName = '平均(Z=0)';
+    }
 
     // ランク付け (上位判定)
     const sortedX = [...validRows].sort((a, b) => b._x - a._x);
@@ -406,7 +427,7 @@ class ScatterPlot {
     sortedY.forEach((r, rank) => { r._rankY = rank + 1; });
 
     // 一般的な散布図の縦横比 (通常時は自然で美しい 4:3 = 1.333、1:1比率固定時は 1.0)
-    const targetAspect = this.options.lockAspect1to1 ? 1.0 : 1.333;
+    const targetAspect = (this.options.lockAspect1to1 || isCluster) ? 1.0 : 1.333;
     let renderW = 800;
     let renderH = 600;
 
@@ -416,11 +437,11 @@ class ScatterPlot {
       const contH = rect.height > 100 ? rect.height : 600;
 
       if (contW / contH > targetAspect) {
-        // コンテナが横長の場合: コンテナの高さに合わせて幅を4:3に制限 (縦潰れ防止)
+        // コンテナが横長の場合: コンテナの高さに合わせて幅を制限 (縦潰れ防止)
         renderH = Math.max(280, Math.floor(contH));
         renderW = Math.round(renderH * targetAspect);
       } else {
-        // コンテナが縦長の場合: コンテナの幅に合わせて高さを4:3に設定
+        // コンテナが縦長の場合: コンテナの幅に合わせて高さを設定
         renderW = Math.max(380, Math.floor(contW));
         renderH = Math.round(renderW / targetAspect);
       }
@@ -431,28 +452,49 @@ class ScatterPlot {
     this.currentRenderWidth = width;
     this.currentRenderHeight = height;
 
-    let xMin = Math.min(...xValues);
-    let xMax = Math.max(...xValues);
-    let yMin = Math.min(...yValues);
-    let yMax = Math.max(...yValues);
+    let xMin, xMax, yMin, yMax;
+    let scaleX, scaleY;
 
-    // 45度線・1:1比率の場合はスケール範囲を統合
-    if (this.options.lockAspect1to1 || this.options.showLine45) {
-      const globalMin = Math.min(xMin, yMin);
-      const globalMax = Math.max(xMax, yMax);
-      if (this.options.lockAspect1to1) {
-        xMin = globalMin;
-        xMax = globalMax;
-        yMin = globalMin;
-        yMax = globalMax;
+    if (isCluster) {
+      const zxVals = validRows.map(r => r._zx);
+      const zyVals = validRows.map(r => r._zy);
+      const rawMinX = Math.min(...zxVals);
+      const rawMaxX = Math.max(...zxVals);
+      const rawMinY = Math.min(...zyVals);
+      const rawMaxY = Math.max(...zyVals);
+      // 原点0が綺麗に見えるように、また1:1比率で対等に比較できるよう対称化
+      const maxAbs = Math.max(Math.abs(rawMinX), Math.abs(rawMaxX), Math.abs(rawMinY), Math.abs(rawMaxY), 1.6);
+      const limit = Math.ceil(maxAbs * 1.15 * 2) / 2; // 0.5刻みで切り上げ
+      xMin = -limit;
+      xMax = limit;
+      yMin = -limit;
+      yMax = limit;
+      scaleX = this.calcNiceScale(xMin, xMax, 6);
+      scaleY = this.calcNiceScale(yMin, yMax, 6);
+    } else {
+      xMin = Math.min(...xValues);
+      xMax = Math.max(...xValues);
+      yMin = Math.min(...yValues);
+      yMax = Math.max(...yValues);
+
+      // 45度線・1:1比率の場合はスケール範囲を統合
+      if (this.options.lockAspect1to1 || this.options.showLine45) {
+        const globalMin = Math.min(xMin, yMin);
+        const globalMax = Math.max(xMax, yMax);
+        if (this.options.lockAspect1to1) {
+          xMin = globalMin;
+          xMax = globalMax;
+          yMin = globalMin;
+          yMax = globalMax;
+        }
       }
-    }
 
-    // 余白率 (5%〜10%のパディング)
-    const padX = (xMax - xMin) * 0.08 || 1;
-    const padY = (yMax - yMin) * 0.08 || 1;
-    const scaleX = this.calcNiceScale(xMin - padX, xMax + padX, 7);
-    const scaleY = this.calcNiceScale(yMin - padY, yMax + padY, 7);
+      // 余白率 (5%〜10%のパディング)
+      const padX = (xMax - xMin) * 0.08 || 1;
+      const padY = (yMax - yMin) * 0.08 || 1;
+      scaleX = this.calcNiceScale(xMin - padX, xMax + padX, 7);
+      scaleY = this.calcNiceScale(yMin - padY, yMax + padY, 7);
+    }
 
     // Y軸目盛り数値の最大文字幅を動的計算 (桁数が多い場合に縦軸タイトルとの重なりを完全防止)
     let maxYTickCharLen = 3;
@@ -520,8 +562,46 @@ class ScatterPlot {
     plotBg.setAttribute("fill", theme.plotBg);
     svg.appendChild(plotBg);
 
-    // 1. 4象限背景ハイライト
-    if (this.options.showQuadrant && this.options.showQuadrantBg) {
+    // 0. クラスター領域 (凸包ポリゴン) の描画
+    if (isCluster && this.options.showClusterHulls && clusterResult) {
+      const hullGroup = document.createElementNS(svgNS, "g");
+      hullGroup.setAttribute("class", "cluster-hulls");
+      const cColors = this.options.clusterColors || ['#005aff', '#ea580c', '#16a34a', '#9333ea', '#d97706', '#0891b2', '#e11d48', '#4b5563'];
+
+      clusterResult.clusters.forEach(c => {
+        if (!c.points || c.points.length === 0) return;
+        const color = cColors[c.id % cColors.length];
+        const screenPts = c.points.map(p => ({ x: toPx(p.x), y: toPy(p.y) }));
+        const hull = Stats.convexHull(screenPts);
+
+        if (hull.length >= 3) {
+          const poly = document.createElementNS(svgNS, "polygon");
+          const ptsStr = hull.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+          poly.setAttribute("points", ptsStr);
+          poly.setAttribute("fill", color);
+          poly.setAttribute("fill-opacity", "0.12");
+          poly.setAttribute("stroke", color);
+          poly.setAttribute("stroke-width", "1.5");
+          poly.setAttribute("stroke-dasharray", "4,3");
+          poly.setAttribute("stroke-opacity", "0.7");
+          hullGroup.appendChild(poly);
+        } else if (hull.length === 2) {
+          const line = document.createElementNS(svgNS, "line");
+          line.setAttribute("x1", hull[0].x);
+          line.setAttribute("y1", hull[0].y);
+          line.setAttribute("x2", hull[1].x);
+          line.setAttribute("y2", hull[1].y);
+          line.setAttribute("stroke", color);
+          line.setAttribute("stroke-width", "2");
+          line.setAttribute("stroke-opacity", "0.7");
+          hullGroup.appendChild(line);
+        }
+      });
+      svg.appendChild(hullGroup);
+    }
+
+    // 1. 4象限背景ハイライト (通常モード時のみ)
+    if (!isCluster && this.options.showQuadrant && this.options.showQuadrantBg) {
       const qSplitPx = toPx(splitX);
       const qSplitPy = toPy(splitY);
 
@@ -822,19 +902,26 @@ class ScatterPlot {
     }
 
     // 6. プロット点の描画データ準備
-    const points = validRows.map(r => ({
-      id: r._id,
-      name: r._name,
-      x: r._x,
-      y: r._y,
-      px: toPx(r._x),
-      py: toPy(r._y),
-      isOutlier: r._isOutlier,
-      rankX: r._rankX,
-      rankY: r._rankY,
-      isLabeled: !!r._labeled,
-      isHighlighted: !!r._highlighted
-    }));
+    const points = validRows.map(r => {
+      const plotValX = isCluster ? r._zx : r._x;
+      const plotValY = isCluster ? r._zy : r._y;
+      return {
+        id: r._id,
+        name: r._name,
+        x: r._x,
+        y: r._y,
+        zx: r._zx,
+        zy: r._zy,
+        clusterId: r._clusterId ?? 0,
+        px: toPx(plotValX),
+        py: toPy(plotValY),
+        isOutlier: r._isOutlier,
+        rankX: r._rankX,
+        rankY: r._rankY,
+        isLabeled: !!r._labeled,
+        isHighlighted: !!r._highlighted
+      };
+    });
 
     // ラベルレイアウト計算
     const labels = this.layoutEngine.initLabels(points, {
@@ -886,6 +973,9 @@ class ScatterPlot {
       let pColor = theme.pointFill;
       if (isHl) {
         pColor = theme.hlPoint || "#ea580c";
+      } else if (isCluster) {
+        const cColors = this.options.clusterColors || ['#005aff', '#ea580c', '#16a34a', '#9333ea', '#d97706', '#0891b2', '#e11d48', '#4b5563'];
+        pColor = cColors[p.clusterId % cColors.length];
       } else if (this.options.colorPointsByQuadrant && this.options.showQuadrant) {
         const qFg = theme.quadrantPointFg || theme.quadrantFg || ['#005aff', '#b45309', '#44403c', '#c2410c'];
         if (p.x >= splitX && p.y >= splitY) {
@@ -912,7 +1002,11 @@ class ScatterPlot {
 
       // ツールチップ用タイトル要素
       const titleEl = document.createElementNS(svgNS, "title");
-      titleEl.textContent = `${p.name}${isHl ? " [★強調]" : ""}\n${xKey}: ${p.x.toLocaleString()}\n${yKey}: ${p.y.toLocaleString()}\n(クリックでラベル表示切替)`;
+      if (isCluster) {
+        titleEl.textContent = `${p.name}${isHl ? " [★強調]" : ""}\nクラスター: Cluster ${p.clusterId + 1}\n${xKey}: ${p.x.toLocaleString()} (Z: ${p.zx >= 0 ? '+' : ''}${p.zx.toFixed(2)}σ)\n${yKey}: ${p.y.toLocaleString()} (Z: ${p.zy >= 0 ? '+' : ''}${p.zy.toFixed(2)}σ)\n(クリックでラベル表示切替)`;
+      } else {
+        titleEl.textContent = `${p.name}${isHl ? " [★強調]" : ""}\n${xKey}: ${p.x.toLocaleString()}\n${yKey}: ${p.y.toLocaleString()}\n(クリックでラベル表示切替)`;
+      }
       circle.appendChild(titleEl);
 
       // プロット点のクリック (個別ラベル表示/非表示のトグル)
@@ -937,6 +1031,49 @@ class ScatterPlot {
       pointsGroup.appendChild(circle);
     });
     svg.appendChild(pointsGroup);
+
+    // 8.5 クラスター重心 (Centroid) の描画
+    if (isCluster && this.options.showCentroids && clusterResult) {
+      const centroidGroup = document.createElementNS(svgNS, "g");
+      centroidGroup.setAttribute("class", "cluster-centroids");
+      const cColors = this.options.clusterColors || ['#005aff', '#ea580c', '#16a34a', '#9333ea', '#d97706', '#0891b2', '#e11d48', '#4b5563'];
+
+      clusterResult.clusters.forEach(c => {
+        if (!c.centroid) return;
+        const cPx = toPx(c.centroid.x);
+        const cPy = toPy(c.centroid.y);
+        const color = cColors[c.id % cColors.length];
+
+        const g = document.createElementNS(svgNS, "g");
+        g.setAttribute("transform", `translate(${cPx}, ${cPy})`);
+
+        // 外側の白いハローリング
+        const halo = document.createElementNS(svgNS, "circle");
+        halo.setAttribute("r", "11");
+        halo.setAttribute("fill", "#ffffff");
+        halo.setAttribute("stroke", color);
+        halo.setAttribute("stroke-width", "2.5");
+        g.appendChild(halo);
+
+        // 重心テキスト (C1, C2...)
+        const label = document.createElementNS(svgNS, "text");
+        label.setAttribute("text-anchor", "middle");
+        label.setAttribute("dy", "0.34em");
+        label.setAttribute("font-size", "9");
+        label.setAttribute("font-weight", "800");
+        label.setAttribute("fill", color);
+        label.textContent = `C${c.id + 1}`;
+        g.appendChild(label);
+
+        // ツールチップ
+        const tip = document.createElementNS(svgNS, "title");
+        tip.textContent = `クラスター${c.id + 1} 重心 (Centroid)\nZx: ${c.centroid.x >= 0 ? '+' : ''}${c.centroid.x.toFixed(2)}σ\nZy: ${c.centroid.y >= 0 ? '+' : ''}${c.centroid.y.toFixed(2)}σ\n所属点数: ${c.points.length}件`;
+        g.appendChild(tip);
+
+        centroidGroup.appendChild(g);
+      });
+      svg.appendChild(centroidGroup);
+    }
 
     // 9. ラベルの描画グループ (最前面・ドラッグ可能)
     const labelsGroup = document.createElementNS(svgNS, "g");
@@ -990,6 +1127,16 @@ class ScatterPlot {
     svg.appendChild(labelsGroup);
 
     // 10. 軸線・目盛値・軸タイトル
+    // 目盛りフォーマットヘルパー
+    const formatTick = (val) => {
+      if (isCluster) {
+        if (Math.abs(val) < 1e-6) return '0.0 (平均)';
+        const sign = val > 0 ? '+' : '';
+        return `${sign}${val.toFixed(1)}σ`;
+      }
+      return val.toLocaleString();
+    };
+
     // X軸
     const xAxisLine = document.createElementNS(svgNS, "line");
     xAxisLine.setAttribute("x1", margin.left);
@@ -1016,8 +1163,8 @@ class ScatterPlot {
         tickText.setAttribute("y", margin.top + plotH + 16);
         tickText.setAttribute("text-anchor", "middle");
         tickText.setAttribute("fill", theme.text);
-        tickText.setAttribute("font-size", "11");
-        tickText.textContent = tick.toLocaleString();
+        tickText.setAttribute("font-size", isCluster ? "10" : "11");
+        tickText.textContent = formatTick(tick);
         svg.appendChild(tickText);
       }
     });
@@ -1030,7 +1177,7 @@ class ScatterPlot {
     xLabel.setAttribute("fill", theme.text);
     xLabel.setAttribute("font-size", "12");
     xLabel.setAttribute("font-weight", "600");
-    xLabel.textContent = this.options.xTitle || xKey;
+    xLabel.textContent = isCluster ? `${this.options.xTitle || xKey} (Zスコア)` : (this.options.xTitle || xKey);
     svg.appendChild(xLabel);
 
     // Y軸
@@ -1059,8 +1206,8 @@ class ScatterPlot {
         tickText.setAttribute("y", y + 4);
         tickText.setAttribute("text-anchor", "end");
         tickText.setAttribute("fill", theme.text);
-        tickText.setAttribute("font-size", "11");
-        tickText.textContent = tick.toLocaleString();
+        tickText.setAttribute("font-size", isCluster ? "10" : "11");
+        tickText.textContent = formatTick(tick);
         svg.appendChild(tickText);
       }
     });
@@ -1075,7 +1222,7 @@ class ScatterPlot {
     yLabel.setAttribute("fill", theme.text);
     yLabel.setAttribute("font-size", "12");
     yLabel.setAttribute("font-weight", "600");
-    yLabel.textContent = this.options.yTitle || yKey;
+    yLabel.textContent = isCluster ? `${this.options.yTitle || yKey} (Zスコア)` : (this.options.yTitle || yKey);
     svg.appendChild(yLabel);
 
     // グラフメインタイトル
@@ -1110,7 +1257,9 @@ class ScatterPlot {
       splitY,
       splitTypeName,
       regression,
-      quadrants: quadClass
+      quadrants: quadClass,
+      clusterResult,
+      isCluster
     };
   }
 
