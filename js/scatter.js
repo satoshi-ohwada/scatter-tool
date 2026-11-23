@@ -508,25 +508,52 @@ class ScatterPlot {
       scaleY = this.calcNiceScale(yMin - padY, yMax + padY, 7);
     }
 
-    // Y軸目盛り数値の最大文字幅を動的計算 (桁数が多い場合に縦軸タイトルとの重なりを完全防止)
-    let maxYTickCharLen = 3;
-    scaleY.ticks.forEach(t => {
-      const s = t.toLocaleString();
-      if (s.length > maxYTickCharLen) maxYTickCharLen = s.length;
-    });
-    const yTickTextWidth = Math.max(26, Math.round(maxYTickCharLen * 7.0 + 8));
-    this.yTickTextWidth = yTickTextWidth;
-    // Y軸タイトル(14px) + 余白(12px) + 目盛り数値幅 + 目盛り線(5px) + 余白
-    const dynamicMarginLeft = Math.max(56, yTickTextWidth + 30);
+    // 目盛りフォーマットヘルパー (マージン計算および目盛り描画で共用)
+    const formatTick = (val) => {
+      if (isCluster) {
+        if (Math.abs(val) < 1e-6) return '0.0 (平均)';
+        const sign = val > 0 ? '+' : '';
+        return `${sign}${val.toFixed(1)}σ`;
+      }
+      return val.toLocaleString();
+    };
 
-    // タイトルや回帰式バッジ、クラスター凡例の有無に応じて上部余白を最適化 (重なりを防止しグラフを最大化)
+    // Y軸目盛り数値の最大文字幅を正確に動的計算 (全角日本語「0.0 (平均)」や桁数の多い数値と縦軸タイトルの重なりを完全防止)
+    let maxYTickTextWidth = 24;
+    scaleY.ticks.forEach(t => {
+      const s = formatTick(t);
+      let w = 0;
+      for (let i = 0; i < s.length; i++) {
+        // 全角文字(日本語)は約12px、半角英数は約6.8px
+        w += s.charCodeAt(i) > 255 ? 12 : 6.8;
+      }
+      if (w > maxYTickTextWidth) maxYTickTextWidth = w;
+    });
+    const yTickTextWidth = Math.ceil(maxYTickTextWidth);
+    this.yTickTextWidth = yTickTextWidth;
+
+    // Y軸タイトル(14px) + 余白(16px) + 目盛り数値幅 + 目盛り線(5px) + 余白(8px)
+    const dynamicMarginLeft = Math.max(64, yTickTextWidth + 42);
+
+    // タイトルや回帰式バッジ、クラスター凡例の有無に応じて上部余白を最適化 (プロット枠外に綺麗に配置)
     const hasTitle = Boolean(this.options.title && this.options.title.trim());
     const hasRegEq = Boolean(this.options.showRegression && this.options.showRegressionEquation);
-    const hasClusterLegend = Boolean(isCluster && this.options.showClusterLabels !== false);
+    const showClusterLegend = Boolean(isCluster && this.options.showClusterLabels !== false);
+
+    // 上部マージン: クラスター凡例をプロット枠外に独立表示するため十分な高さを確保
+    let topMargin = 22;
+    if (hasTitle && showClusterLegend) {
+      topMargin = 58; // メインタイトル + 凡例バー
+    } else if (hasTitle) {
+      topMargin = 44; // メインタイトルのみ
+    } else if (showClusterLegend || hasRegEq) {
+      topMargin = 40; // 凡例バーまたは回帰式バッジ
+    }
+
     const margin = {
-      top: hasTitle ? 44 : ((hasRegEq || hasClusterLegend) ? 34 : 22),
+      top: topMargin,
       right: 28,
-      bottom: 54, // 横軸目盛り数値と横軸タイトルの重なりを完全防止するクリアランス (42 -> 54)
+      bottom: 54, // 横軸目盛り数値と横軸タイトルの重なりを完全防止するクリアランス
       left: dynamicMarginLeft
     };
 
@@ -1078,114 +1105,68 @@ class ScatterPlot {
       svg.appendChild(centroidGroup);
     }
 
-    // 8.6 クラスター識別ラベル (C1, C2...) および凡例の描画
-    // プロット点密集域の中心を避け、楕円外周境界上端や右上に配置して重なりを完全防止
+    // 8.6 クラスター凡例 (Legend Bar) の描画 (プロット枠外の上部に独立配置し、点や楕円との重なりを完全解消)
     if (isCluster && (this.options.showClusterLabels !== false) && clusterResult) {
-      const labelLegendGroup = document.createElementNS(svgNS, "g");
-      labelLegendGroup.setAttribute("class", "cluster-labels-legend");
+      const legendGroup = document.createElementNS(svgNS, "g");
+      legendGroup.setAttribute("class", "cluster-legend-bar");
       const cColors = this.options.clusterColors || ['#005aff', '#ea580c', '#16a34a', '#9333ea', '#d97706', '#0891b2', '#e11d48', '#4b5563'];
 
-      // (1) 楕円外周（上端境界）のバッジ
+      // 凡例のY座標: プロット枠外の上部余白 (タイトルがある場合はその直下)
+      const legendY = hasTitle ? 32 : 14;
+
+      let currentX = margin.left;
       clusterResult.clusters.forEach(c => {
-        if (!c.centroid) return;
-        const color = cColors[c.id % cColors.length];
-        const cPx = toPx(c.centroid.x);
-        const cPy = toPy(c.centroid.y);
-
-        let badgeX, badgeY;
-        const ell = c.ellipse;
-        if (ell && this.options.showClusterHulls) {
-          // 楕円の上端境界座標を算出
-          const rad = (ell.angleDeg || 0) * Math.PI / 180;
-          const sinT = Math.sin(rad);
-          const cosT = Math.cos(rad);
-          const yRadius = Math.sqrt((ell.rx * sinT) ** 2 + (ell.ry * cosT) ** 2);
-          const xRadiusOffset = yRadius > 0.001 ? -((ell.rx ** 2 - ell.ry ** 2) * sinT * cosT) / yRadius : 0;
-          badgeX = ell.cx + xRadiusOffset;
-          badgeY = ell.cy - yRadius - 7;
-        } else {
-          // 楕円がない場合は重心から斜め上にオフセット
-          badgeX = cPx + 12;
-          badgeY = cPy - 12;
-        }
-
-        // グラフ枠内に安全に収めるクリッピング
-        badgeX = Math.max(margin.left + 16, Math.min(margin.left + plotW - 16, badgeX));
-        badgeY = Math.max(margin.top + 8, Math.min(margin.top + plotH - 8, badgeY));
-
-        const bg = document.createElementNS(svgNS, "g");
-        bg.setAttribute("transform", `translate(${badgeX.toFixed(1)}, ${badgeY.toFixed(1)})`);
-
-        // 小さな角丸ピルバッジ
-        const pillW = 24;
-        const pillH = 15;
-        const pillRect = document.createElementNS(svgNS, "rect");
-        pillRect.setAttribute("x", (-pillW / 2).toFixed(1));
-        pillRect.setAttribute("y", (-pillH / 2).toFixed(1));
-        pillRect.setAttribute("width", pillW);
-        pillRect.setAttribute("height", pillH);
-        pillRect.setAttribute("rx", "4");
-        pillRect.setAttribute("ry", "4");
-        pillRect.setAttribute("fill", "#ffffff");
-        pillRect.setAttribute("fill-opacity", "0.92");
-        pillRect.setAttribute("stroke", color);
-        pillRect.setAttribute("stroke-width", "1.2");
-        bg.appendChild(pillRect);
-
-        const txt = document.createElementNS(svgNS, "text");
-        txt.setAttribute("text-anchor", "middle");
-        txt.setAttribute("dy", "0.34em");
-        txt.setAttribute("font-size", "9.5");
-        txt.setAttribute("font-weight", "800");
-        txt.setAttribute("fill", color);
-        txt.textContent = `C${c.id + 1}`;
-        bg.appendChild(txt);
-
-        // ツールチップ
-        const tip = document.createElementNS(svgNS, "title");
-        tip.textContent = `クラスター${c.id + 1}\n所属データ数: ${c.points ? c.points.length : 0}件\n重心 Zx: ${c.centroid.x >= 0 ? '+' : ''}${c.centroid.x.toFixed(2)}σ, Zy: ${c.centroid.y >= 0 ? '+' : ''}${c.centroid.y.toFixed(2)}σ`;
-        bg.appendChild(tip);
-
-        labelLegendGroup.appendChild(bg);
-      });
-
-      // (2) グラフ上部右側のコンパクトな凡例 (Legend Bar)
-      let legendRightX = margin.left + plotW;
-      const legendY = hasTitle ? (margin.top - 8) : (margin.top - 12);
-      
-      [...clusterResult.clusters].reverse().forEach(c => {
         const color = cColors[c.id % cColors.length];
         const count = c.points ? c.points.length : 0;
-        const labelText = `C${c.id + 1} (${count})`;
-        const itemW = labelText.length * 6.0 + 18;
-        legendRightX -= itemW;
+        const labelText = `C${c.id + 1} (${count}件)`;
+        const badgeW = labelText.length * 6.5 + 24;
 
-        if (legendRightX >= margin.left) {
+        if (currentX + badgeW <= margin.left + plotW) {
           const legItem = document.createElementNS(svgNS, "g");
-          legItem.setAttribute("transform", `translate(${legendRightX.toFixed(1)}, ${legendY})`);
+          legItem.setAttribute("transform", `translate(${currentX.toFixed(1)}, ${legendY})`);
 
-          const legDot = document.createElementNS(svgNS, "circle");
-          legDot.setAttribute("cx", "5");
-          legDot.setAttribute("cy", "-3");
-          legDot.setAttribute("r", "3.5");
-          legDot.setAttribute("fill", color);
-          legItem.appendChild(legDot);
+          // 凡例背景ピル
+          const pill = document.createElementNS(svgNS, "rect");
+          pill.setAttribute("x", "0");
+          pill.setAttribute("y", "0");
+          pill.setAttribute("width", badgeW.toFixed(1));
+          pill.setAttribute("height", "18");
+          pill.setAttribute("rx", "4");
+          pill.setAttribute("ry", "4");
+          pill.setAttribute("fill", "#f8fafc");
+          pill.setAttribute("stroke", "#e2e8f0");
+          pill.setAttribute("stroke-width", "1");
+          legItem.appendChild(pill);
 
-          const legTxt = document.createElementNS(svgNS, "text");
-          legTxt.setAttribute("x", "12");
-          legTxt.setAttribute("y", "0");
-          legTxt.setAttribute("font-size", "10");
-          legTxt.setAttribute("font-weight", "600");
-          legTxt.setAttribute("fill", "#475569");
-          legTxt.textContent = labelText;
-          legItem.appendChild(legTxt);
+          // カラーチップ
+          const dot = document.createElementNS(svgNS, "circle");
+          dot.setAttribute("cx", "9");
+          dot.setAttribute("cy", "9");
+          dot.setAttribute("r", "4");
+          dot.setAttribute("fill", color);
+          legItem.appendChild(dot);
 
-          labelLegendGroup.appendChild(legItem);
-          legendRightX -= 8; // 項目間余白
+          // テキスト
+          const txt = document.createElementNS(svgNS, "text");
+          txt.setAttribute("x", "18");
+          txt.setAttribute("y", "12.5");
+          txt.setAttribute("font-size", "10");
+          txt.setAttribute("font-weight", "600");
+          txt.setAttribute("fill", "#334155");
+          txt.textContent = labelText;
+          legItem.appendChild(txt);
+
+          // ツールチップ
+          const tip = document.createElementNS(svgNS, "title");
+          tip.textContent = `クラスター${c.id + 1}\n所属データ数: ${count}件\n重心 Zx: ${c.centroid ? (c.centroid.x >= 0 ? '+' : '') + c.centroid.x.toFixed(2) + 'σ' : '-'}\n重心 Zy: ${c.centroid ? (c.centroid.y >= 0 ? '+' : '') + c.centroid.y.toFixed(2) + 'σ' : '-'}`;
+          legItem.appendChild(tip);
+
+          legendGroup.appendChild(legItem);
+          currentX += badgeW + 8; // 項目間余白
         }
       });
 
-      svg.appendChild(labelLegendGroup);
+      svg.appendChild(legendGroup);
     }
 
     // 9. ラベルの描画グループ (最前面・ドラッグ可能)
@@ -1240,16 +1221,6 @@ class ScatterPlot {
     svg.appendChild(labelsGroup);
 
     // 10. 軸線・目盛値・軸タイトル
-    // 目盛りフォーマットヘルパー
-    const formatTick = (val) => {
-      if (isCluster) {
-        if (Math.abs(val) < 1e-6) return '0.0 (平均)';
-        const sign = val > 0 ? '+' : '';
-        return `${sign}${val.toFixed(1)}σ`;
-      }
-      return val.toLocaleString();
-    };
-
     // X軸
     const xAxisLine = document.createElementNS(svgNS, "line");
     xAxisLine.setAttribute("x1", margin.left);
@@ -1329,7 +1300,7 @@ class ScatterPlot {
     const yLabel = document.createElementNS(svgNS, "text");
     yLabel.setAttribute("transform", `rotate(-90)`);
     yLabel.setAttribute("x", -(margin.top + plotH / 2));
-    const yTitlePos = Math.max(16, margin.left - (this.yTickTextWidth || 30) - 14);
+    const yTitlePos = Math.max(16, margin.left - (this.yTickTextWidth || 30) - 18);
     yLabel.setAttribute("y", yTitlePos);
     yLabel.setAttribute("text-anchor", "middle");
     yLabel.setAttribute("fill", theme.text);
@@ -1338,11 +1309,11 @@ class ScatterPlot {
     yLabel.textContent = isCluster ? `${this.options.yTitle || yKey} (Zスコア)` : (this.options.yTitle || yKey);
     svg.appendChild(yLabel);
 
-    // グラフメインタイトル
+    // グラフメインタイトル (クラスター凡例がある場合は凡例の上部にすっきり配置)
     if (this.options.title) {
       const mainTitle = document.createElementNS(svgNS, "text");
       mainTitle.setAttribute("x", margin.left);
-      mainTitle.setAttribute("y", margin.top - 18);
+      mainTitle.setAttribute("y", showClusterLegend ? 20 : (margin.top - 16));
       mainTitle.setAttribute("fill", theme.text);
       mainTitle.setAttribute("font-size", "16");
       mainTitle.setAttribute("font-weight", "bold");
