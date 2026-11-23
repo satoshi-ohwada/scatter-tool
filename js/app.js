@@ -859,8 +859,28 @@ document.addEventListener('DOMContentLoaded', () => {
       if (elements.clusterOptions) {
         elements.clusterOptions.style.display = isEnabled ? 'block' : 'none';
       }
+
       if (isEnabled) {
+        // クラスター分析時は全体回帰直線は意味をなさないため自動的にチェックを解除
+        if (state._prevRegressionChecked === undefined) {
+          state._prevRegressionChecked = elements.chkRegression.checked;
+        }
+        if (elements.chkRegression.checked) {
+          elements.chkRegression.checked = false;
+        }
+        if (elements.chkRegressionEq) {
+          elements.chkRegressionEq.checked = false;
+        }
+        if (elements.chkConfidence) {
+          elements.chkConfidence.checked = false;
+        }
         updateOptimalClusterK();
+      } else {
+        // クラスター分析解除時に元の回帰直線状態を復元
+        if (state._prevRegressionChecked) {
+          elements.chkRegression.checked = true;
+        }
+        state._prevRegressionChecked = undefined;
       }
       redrawChart();
     });

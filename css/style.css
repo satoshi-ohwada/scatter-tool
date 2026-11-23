@@ -1162,3 +1162,12 @@ body {
   fill-opacity: 0.22;
   stroke-width: 2.5;
 }
+
+.cluster-ellipses ellipse {
+  transition: all 0.25s ease;
+}
+
+.cluster-ellipses ellipse:hover {
+  fill-opacity: 0.20;
+  stroke-width: 2.2;
+}

@@ -562,42 +562,36 @@ class ScatterPlot {
     plotBg.setAttribute("fill", theme.plotBg);
     svg.appendChild(plotBg);
 
-    // 0. クラスター領域 (凸包ポリゴン) の描画
+    // 0. クラスター領域 (包含・信頼楕円) の描画
     if (isCluster && this.options.showClusterHulls && clusterResult) {
-      const hullGroup = document.createElementNS(svgNS, "g");
-      hullGroup.setAttribute("class", "cluster-hulls");
+      const ellipseGroup = document.createElementNS(svgNS, "g");
+      ellipseGroup.setAttribute("class", "cluster-hulls cluster-ellipses");
       const cColors = this.options.clusterColors || ['#005aff', '#ea580c', '#16a34a', '#9333ea', '#d97706', '#0891b2', '#e11d48', '#4b5563'];
 
       clusterResult.clusters.forEach(c => {
         if (!c.points || c.points.length === 0) return;
         const color = cColors[c.id % cColors.length];
         const screenPts = c.points.map(p => ({ x: toPx(p.x), y: toPy(p.y) }));
-        const hull = Stats.convexHull(screenPts);
+        const ell = Stats.clusterEllipse(screenPts);
+        if (!ell) return;
 
-        if (hull.length >= 3) {
-          const poly = document.createElementNS(svgNS, "polygon");
-          const ptsStr = hull.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
-          poly.setAttribute("points", ptsStr);
-          poly.setAttribute("fill", color);
-          poly.setAttribute("fill-opacity", "0.12");
-          poly.setAttribute("stroke", color);
-          poly.setAttribute("stroke-width", "1.5");
-          poly.setAttribute("stroke-dasharray", "4,3");
-          poly.setAttribute("stroke-opacity", "0.7");
-          hullGroup.appendChild(poly);
-        } else if (hull.length === 2) {
-          const line = document.createElementNS(svgNS, "line");
-          line.setAttribute("x1", hull[0].x);
-          line.setAttribute("y1", hull[0].y);
-          line.setAttribute("x2", hull[1].x);
-          line.setAttribute("y2", hull[1].y);
-          line.setAttribute("stroke", color);
-          line.setAttribute("stroke-width", "2");
-          line.setAttribute("stroke-opacity", "0.7");
-          hullGroup.appendChild(line);
+        const ellipseEl = document.createElementNS(svgNS, "ellipse");
+        ellipseEl.setAttribute("cx", ell.cx.toFixed(1));
+        ellipseEl.setAttribute("cy", ell.cy.toFixed(1));
+        ellipseEl.setAttribute("rx", ell.rx.toFixed(1));
+        ellipseEl.setAttribute("ry", ell.ry.toFixed(1));
+        if (Math.abs(ell.angleDeg) > 0.01) {
+          ellipseEl.setAttribute("transform", `rotate(${ell.angleDeg.toFixed(2)}, ${ell.cx.toFixed(1)}, ${ell.cy.toFixed(1)})`);
         }
+        ellipseEl.setAttribute("fill", color);
+        ellipseEl.setAttribute("fill-opacity", "0.10");
+        ellipseEl.setAttribute("stroke", color);
+        ellipseEl.setAttribute("stroke-width", "1.5");
+        ellipseEl.setAttribute("stroke-dasharray", "4,3");
+        ellipseEl.setAttribute("stroke-opacity", "0.65");
+        ellipseGroup.appendChild(ellipseEl);
       });
-      svg.appendChild(hullGroup);
+      svg.appendChild(ellipseGroup);
     }
 
     // 1. 4象限背景ハイライト (通常モード時のみ)

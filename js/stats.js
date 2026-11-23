@@ -378,6 +378,70 @@ const Stats = {
     lower.pop();
     upper.pop();
     return lower.concat(upper);
+  },
+
+  // クラスターの包含・信頼楕円パラメータ計算
+  // points: [{ x, y }] (画面ピクセル座標または2D座標)
+  // 戻り値: { cx, cy, rx, ry, angleDeg }
+  clusterEllipse(points) {
+    const n = points.length;
+    if (n === 0) return null;
+    if (n === 1) {
+      return { cx: points[0].x, cy: points[0].y, rx: 22, ry: 22, angleDeg: 0 };
+    }
+    if (n === 2) {
+      const p1 = points[0];
+      const p2 = points[1];
+      const cx = (p1.x + p2.x) / 2;
+      const cy = (p1.y + p2.y) / 2;
+      const dist = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+      const rx = Math.max(24, dist / 2 + 16);
+      const ry = Math.max(18, dist * 0.35 + 12);
+      const angleDeg = Math.atan2(p2.y - p1.y, p2.x - p1.x) * (180 / Math.PI);
+      return { cx, cy, rx, ry, angleDeg };
+    }
+
+    // n >= 3: 標本共分散行列に基づく信頼楕円
+    const cx = points.reduce((s, p) => s + p.x, 0) / n;
+    const cy = points.reduce((s, p) => s + p.y, 0) / n;
+
+    let varX = 0, varY = 0, covXY = 0;
+    for (const p of points) {
+      const dx = p.x - cx;
+      const dy = p.y - cy;
+      varX += dx * dx;
+      varY += dy * dy;
+      covXY += dx * dy;
+    }
+    varX /= (n - 1);
+    varY /= (n - 1);
+    covXY /= (n - 1);
+
+    // 固有値計算 (主軸方向の分散)
+    const trace = varX + varY;
+    const diff = varX - varY;
+    const disc = Math.sqrt(Math.max(0, diff * diff + 4 * covXY * covXY));
+    const lambda1 = Math.max(0, (trace + disc) / 2);
+    const lambda2 = Math.max(0, (trace - disc) / 2);
+
+    // 回転角 (度)
+    const angleRad = 0.5 * Math.atan2(2 * covXY, diff);
+    const angleDeg = angleRad * (180 / Math.PI);
+
+    // 信頼区間スケール (95%水準: 約2.45σ) ＋ 点群の外周クリアランス
+    let rx = Math.sqrt(lambda1) * 2.3 + 12;
+    let ry = Math.sqrt(lambda2) * 2.3 + 12;
+
+    // 実際の点群との最大距離を加味して確実に覆うように補正
+    let maxDist = 0;
+    points.forEach(p => {
+      const d = Math.hypot(p.x - cx, p.y - cy);
+      if (d > maxDist) maxDist = d;
+    });
+    if (rx < maxDist + 8) rx = maxDist + 8;
+    if (ry < 18) ry = 18;
+
+    return { cx, cy, rx, ry, angleDeg };
   }
 };
 
