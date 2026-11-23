@@ -26,6 +26,7 @@ class ScatterPlot {
       clusterK: 3,
       showCentroids: true,
       showClusterHulls: true,
+      clusterAspect1to1: true,
       clusterColors: ['#005aff', '#ea580c', '#16a34a', '#9333ea', '#d97706', '#0891b2', '#e11d48', '#4b5563'],
       quadrantLabels: {
         q1: '第1象限 (高X・高Y)',
@@ -427,7 +428,11 @@ class ScatterPlot {
     sortedY.forEach((r, rank) => { r._rankY = rank + 1; });
 
     // 一般的な散布図の縦横比 (通常時は自然で美しい 4:3 = 1.333、1:1比率固定時は 1.0)
-    const targetAspect = (this.options.lockAspect1to1 || isCluster) ? 1.0 : 1.333;
+    const isAspect1to1 = Boolean(
+      this.options.lockAspect1to1 ||
+      (isCluster && (this.options.clusterAspect1to1 ?? true))
+    );
+    const targetAspect = isAspect1to1 ? 1.0 : 1.333;
     let renderW = 800;
     let renderH = 600;
 
@@ -462,13 +467,19 @@ class ScatterPlot {
       const rawMaxX = Math.max(...zxVals);
       const rawMinY = Math.min(...zyVals);
       const rawMaxY = Math.max(...zyVals);
-      // 原点0が綺麗に見えるように、また1:1比率で対等に比較できるよう対称化
-      const maxAbs = Math.max(Math.abs(rawMinX), Math.abs(rawMaxX), Math.abs(rawMinY), Math.abs(rawMaxY), 1.6);
-      const limit = Math.ceil(maxAbs * 1.15 * 2) / 2; // 0.5刻みで切り上げ
-      xMin = -limit;
-      xMax = limit;
-      yMin = -limit;
-      yMax = limit;
+      
+      // X軸・Y軸それぞれのデータの広がり(偏差)に合わせて独立して枠いっぱいに拡大
+      // 軸の偏りによる「図の縮小・余白の増大」を解消し、正方形・横長枠の全体をダイナミックに使用
+      const maxAbsX = Math.max(Math.abs(rawMinX), Math.abs(rawMaxX), 0.8);
+      const limitX = Math.ceil(maxAbsX * 1.15 * 2) / 2; // 0.5刻みで切り上げ
+      xMin = -limitX;
+      xMax = limitX;
+
+      const maxAbsY = Math.max(Math.abs(rawMinY), Math.abs(rawMaxY), 0.8);
+      const limitY = Math.ceil(maxAbsY * 1.15 * 2) / 2;
+      yMin = -limitY;
+      yMax = limitY;
+
       scaleX = this.calcNiceScale(xMin, xMax, 6);
       scaleY = this.calcNiceScale(yMin, yMax, 6);
     } else {

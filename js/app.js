@@ -77,6 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
     btnClusterPlus: document.getElementById('btnClusterPlus'),
     chkShowCentroids: document.getElementById('chkShowCentroids'),
     chkShowHulls: document.getElementById('chkShowHulls'),
+    chkClusterAspect1to1: document.getElementById('chkClusterAspect1to1'),
 
     // ラベル設定
     selectLabelMode: document.getElementById('selectLabelMode'),
@@ -192,6 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
       clusterK: elements.inputClusterK ? parseInt(elements.inputClusterK.value, 10) || 3 : 3,
       showCentroids: elements.chkShowCentroids ? elements.chkShowCentroids.checked : true,
       showClusterHulls: elements.chkShowHulls ? elements.chkShowHulls.checked : true,
+      clusterAspect1to1: elements.chkClusterAspect1to1 ? elements.chkClusterAspect1to1.checked : true,
       labelMode: elements.selectLabelMode.value,
       showLeaderLines: true,
       onPointClick: (p, e) => {
@@ -832,7 +834,8 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.selectLabelMode,
     elements.selectTheme,
     elements.chkShowCentroids,
-    elements.chkShowHulls
+    elements.chkShowHulls,
+    elements.chkClusterAspect1to1
   ].filter(Boolean).forEach(ctrl => {
     ctrl.addEventListener('change', redrawChart);
   });
