@@ -775,7 +775,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  elements.btnSample.addEventListener('click', loadSampleData);
+  if (elements.btnSample) elements.btnSample.addEventListener('click', loadSampleData);
   if (elements.btnSampleEmpty) elements.btnSampleEmpty.addEventListener('click', loadSampleData);
   if (elements.btnPaste) elements.btnPaste.addEventListener('click', pasteFromClipboard);
 
