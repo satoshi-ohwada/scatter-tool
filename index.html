@@ -329,9 +329,21 @@
               <div class="empty-guide-card">
                 <div class="empty-guide-icon">📊</div>
                 <h3 class="empty-guide-title">データが読み込まれていません</h3>
-                <p class="empty-guide-desc">Excelの表セルをコピー＆ペーストするか、CSV / Excelファイルを読み込んでください</p>
+                <p class="empty-guide-desc">CSV / Excelファイルを読み込むか、Excelの表セルをコピー＆ペーストしてください</p>
 
                 <div class="empty-action-grid">
+                  <!-- ファイル選択カード -->
+                  <div class="empty-action-box" id="emptyFileBox" role="button" tabindex="0" title="ファイルを選択またはドロップ">
+                    <div class="action-box-icon">📁</div>
+                    <div class="action-box-title">ファイルから読み込み</div>
+                    <div class="action-box-sub">
+                      CSV / Excel (.xlsx) ファイルを<br>ここにドラッグ＆ドロップ
+                    </div>
+                    <button type="button" id="btnEmptyFileSelect" class="btn btn-sm btn-secondary" style="margin-top: 8px;">
+                      📂 ファイルを選択
+                    </button>
+                  </div>
+
                   <!-- コピペ受入カード -->
                   <div class="empty-action-box" id="emptyPasteBox" role="button" tabindex="0" title="ここをクリックして直接貼り付け">
                     <div class="action-box-icon">📋</div>
@@ -345,18 +357,6 @@
                     </div>
                     <button type="button" id="btnEmptyPasteDirect" class="btn btn-sm btn-secondary" style="margin-top: 8px;">
                       📋 クリップボード貼付
-                    </button>
-                  </div>
-
-                  <!-- ファイル選択カード -->
-                  <div class="empty-action-box" id="emptyFileBox" role="button" tabindex="0" title="ファイルを選択またはドロップ">
-                    <div class="action-box-icon">📁</div>
-                    <div class="action-box-title">ファイルから読み込み</div>
-                    <div class="action-box-sub">
-                      CSV / Excel (.xlsx) ファイルを<br>ここにドラッグ＆ドロップ
-                    </div>
-                    <button type="button" id="btnEmptyFileSelect" class="btn btn-sm btn-secondary" style="margin-top: 8px;">
-                      📂 ファイルを選択
                     </button>
                   </div>
                 </div>
