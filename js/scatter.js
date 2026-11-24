@@ -1296,11 +1296,11 @@ class ScatterPlot {
       }
     });
 
-    // Y軸 (縦軸) 項目名称 (目盛り数値の左端から一定マージンを保ち重なりを完全防止)
+    // Y軸 (縦軸) 項目名称 (目盛り数値と程よいバランスの距離を保ち、横軸と均等の視覚マージンを確保)
     const yLabel = document.createElementNS(svgNS, "text");
     yLabel.setAttribute("transform", `rotate(-90)`);
     yLabel.setAttribute("x", -(margin.top + plotH / 2));
-    const yTitlePos = Math.max(16, margin.left - (this.yTickTextWidth || 30) - 18);
+    const yTitlePos = Math.max(16, margin.left - (this.yTickTextWidth || 30) - 13);
     yLabel.setAttribute("y", yTitlePos);
     yLabel.setAttribute("text-anchor", "middle");
     yLabel.setAttribute("fill", theme.text);
