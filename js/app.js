@@ -62,6 +62,13 @@ document.addEventListener('DOMContentLoaded', () => {
     chkRegressionEq: document.getElementById('chkRegressionEq'),
     chkConfidence: document.getElementById('chkConfidence'),
 
+    // 周辺分布 (マージナルプロット)
+    chkMarginalPlots: document.getElementById('chkMarginalPlots'),
+    marginalSubOptions: document.getElementById('marginalSubOptions'),
+    selectMarginalType: document.getElementById('selectMarginalType'),
+    rangeMarginalBins: document.getElementById('rangeMarginalBins'),
+    valMarginalBins: document.getElementById('valMarginalBins'),
+
     // 象限ラベル
     q1Label: document.getElementById('q1Label'),
     q2Label: document.getElementById('q2Label'),
@@ -190,6 +197,9 @@ document.addEventListener('DOMContentLoaded', () => {
       showRegression: elements.chkRegression.checked,
       showRegressionEquation: elements.chkRegressionEq.checked,
       showConfidenceInterval: elements.chkConfidence.checked,
+      showMarginalPlots: elements.chkMarginalPlots ? elements.chkMarginalPlots.checked : false,
+      marginalType: elements.selectMarginalType ? elements.selectMarginalType.value : 'both',
+      marginalBins: elements.rangeMarginalBins ? parseInt(elements.rangeMarginalBins.value, 10) || 12 : 12,
       clusterMode: elements.chkClusterMode ? elements.chkClusterMode.checked : false,
       clusterK: elements.inputClusterK ? parseInt(elements.inputClusterK.value, 10) || 3 : 3,
       showCentroids: elements.chkShowCentroids ? elements.chkShowCentroids.checked : true,
@@ -857,6 +867,28 @@ document.addEventListener('DOMContentLoaded', () => {
   [elements.q1Label, elements.q2Label, elements.q3Label, elements.q4Label].forEach(input => {
     input.addEventListener('input', redrawChart);
   });
+
+  // 周辺分布 (マージナルプロット) の制御
+  if (elements.chkMarginalPlots) {
+    elements.chkMarginalPlots.addEventListener('change', () => {
+      const isEnabled = elements.chkMarginalPlots.checked;
+      if (elements.marginalSubOptions) {
+        elements.marginalSubOptions.style.display = isEnabled ? 'block' : 'none';
+      }
+      redrawChart();
+    });
+  }
+  if (elements.selectMarginalType) {
+    elements.selectMarginalType.addEventListener('change', redrawChart);
+  }
+  if (elements.rangeMarginalBins) {
+    elements.rangeMarginalBins.addEventListener('input', (e) => {
+      if (elements.valMarginalBins) {
+        elements.valMarginalBins.textContent = e.target.value;
+      }
+      redrawChart();
+    });
+  }
 
   // クラスター分析モード切り替え & ステッパー制御
   if (elements.chkClusterMode) {

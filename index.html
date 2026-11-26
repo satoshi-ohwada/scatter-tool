@@ -183,6 +183,29 @@
             <span>95%信頼区間の帯を表示</span>
           </label>
         </div>
+
+        <!-- 周辺分布 (マージナルプロット) -->
+        <label class="check-label" style="margin-top: 6px;">
+          <input type="checkbox" id="chkMarginalPlots">
+          <span>周辺分布 (外側ヒストグラム &amp; KDE)</span>
+        </label>
+        <div id="marginalSubOptions" class="sub-options" style="display: none;">
+          <div class="form-group" style="margin-bottom: 6px;">
+            <label class="form-label" for="selectMarginalType">表示タイプ</label>
+            <select id="selectMarginalType" class="form-select">
+              <option value="both" selected>ヒストグラム ＋ KDE曲線</option>
+              <option value="hist">ヒストグラムのみ</option>
+              <option value="kde">KDE曲線のみ</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" for="rangeMarginalBins">ヒストグラム分割数 (ビン数)</label>
+            <div class="slider-group">
+              <input type="range" id="rangeMarginalBins" min="5" max="30" step="1" value="12">
+              <span id="valMarginalBins" class="slider-val">12</span>
+            </div>
+          </div>
+        </div>
       </section>
 
       <!-- 4. デザイン & ラベル -->

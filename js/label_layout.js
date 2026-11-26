@@ -464,4 +464,9 @@ class LabelLayoutEngine {
   }
 }
 
-window.LabelLayoutEngine = LabelLayoutEngine;
+if (typeof window !== 'undefined') {
+  window.LabelLayoutEngine = LabelLayoutEngine;
+}
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = LabelLayoutEngine;
+}

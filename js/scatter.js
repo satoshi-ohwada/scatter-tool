@@ -40,6 +40,10 @@ class ScatterPlot {
       showRegression: true,
       showRegressionEquation: false, // 回帰式・決定係数のグラフ内表示 (デフォルト控えめ/非表示)
       showConfidenceInterval: false,
+      showMarginalPlots: false, // 各軸外側の周辺分布 (ヒストグラム & KDE)
+      marginalType: 'both', // 'both', 'hist', 'kde'
+      marginalBins: 12,
+      marginalSize: 52,
       labelMode: 'all', // 'all', 'outliers', 'top5', 'none'
       showLeaderLines: true,
       fontSize: 11,
@@ -539,8 +543,11 @@ class ScatterPlot {
     const hasTitle = Boolean(this.options.title && this.options.title.trim());
     const hasRegEq = Boolean(this.options.showRegression && this.options.showRegressionEquation);
     const showClusterLegend = Boolean(isCluster && this.options.showClusterLabels !== false);
+    const showMarginal = Boolean(this.options.showMarginalPlots);
+    const marginalSize = Math.max(30, Math.min(100, parseInt(this.options.marginalSize, 10) || 52));
+    const marginalGap = 10; // プロット枠との隙間
 
-    // 上部マージン: クラスター凡例をプロット枠外に独立表示するため十分な高さを確保
+    // 上部マージン: クラスター凡例や周辺分布をプロット枠外に独立表示するため十分な高さを確保
     let topMargin = 22;
     if (hasTitle && showClusterLegend) {
       topMargin = 58; // メインタイトル + 凡例バー
@@ -550,9 +557,18 @@ class ScatterPlot {
       topMargin = 40; // 凡例バーまたは回帰式バッジ
     }
 
+    if (showMarginal) {
+      topMargin += marginalSize + marginalGap;
+    }
+
+    let rightMargin = 28;
+    if (showMarginal) {
+      rightMargin = Math.max(rightMargin, marginalSize + marginalGap + 16);
+    }
+
     const margin = {
       top: topMargin,
-      right: 28,
+      right: rightMargin,
       bottom: 54, // 横軸目盛り数値と横軸タイトルの重なりを完全防止するクリアランス
       left: dynamicMarginLeft
     };
@@ -781,7 +797,9 @@ class ScatterPlot {
 
         // デフォルト位置: プロット枠外の上部ヘッダー右端 (象限ラベルやプロット点と絶対に重ならない)
         const defaultBoxX = margin.left + plotW - boxW;
-        const defaultBoxY = Math.max(6, margin.top - boxH - 5);
+        const defaultBoxY = showMarginal
+          ? Math.max(6, margin.top - (marginalSize + marginalGap) - boxH - 4)
+          : Math.max(6, margin.top - boxH - 5);
 
         // プロット枠からの相対位置があれば復元 (全画面化や画面サイズ変更時も位置関係を完全維持)
         if (this.regBadgeRel) {
@@ -1309,11 +1327,231 @@ class ScatterPlot {
     yLabel.textContent = isCluster ? `${this.options.yTitle || yKey} (Zスコア)` : (this.options.yTitle || yKey);
     svg.appendChild(yLabel);
 
-    // グラフメインタイトル (クラスター凡例がある場合は凡例の上部にすっきり配置)
+    // 10. 周辺分布 (マージナルヒストグラム & KDE曲線)
+    if (showMarginal) {
+      const marginalGroup = document.createElementNS(svgNS, "g");
+      marginalGroup.setAttribute("class", "marginal-plots");
+
+      const xData = isCluster ? validRows.map(r => r._zx) : xValues;
+      const yData = isCluster ? validRows.map(r => r._zy) : yValues;
+      const binCount = Math.max(5, Math.min(30, parseInt(this.options.marginalBins, 10) || 12));
+      const mType = this.options.marginalType || 'both'; // 'both', 'hist', 'kde'
+
+      const xBaseY = margin.top - marginalGap;
+      const yBaseX = margin.left + plotW + marginalGap;
+
+      const isDark = theme.themeKey === 'dark' || (theme.bg && (theme.bg === '#0f172a' || theme.bg === '#1e293b' || theme.bg === '#111827'));
+      const histFill = isDark ? 'rgba(96, 165, 250, 0.32)' : 'rgba(0, 90, 255, 0.20)';
+      const histStroke = isDark ? 'rgba(147, 197, 253, 0.65)' : 'rgba(0, 90, 255, 0.50)';
+      const kdeStroke = theme.regLine || (isDark ? '#38bdf8' : '#0284c7');
+      const kdeAreaFill = isDark ? 'rgba(56, 189, 248, 0.15)' : 'rgba(2, 132, 199, 0.10)';
+      const guideStroke = theme.grid || (isDark ? '#334155' : '#e2e8f0');
+      const marginalLabelColor = isDark ? '#94a3b8' : '#64748b';
+
+      // --- 1. X軸マージナルプロット (プロット上部) ---
+      // 背景領域
+      const xBg = document.createElementNS(svgNS, "rect");
+      xBg.setAttribute("x", margin.left);
+      xBg.setAttribute("y", xBaseY - marginalSize);
+      xBg.setAttribute("width", plotW);
+      xBg.setAttribute("height", marginalSize);
+      xBg.setAttribute("fill", isDark ? "rgba(30, 41, 59, 0.25)" : "rgba(248, 250, 252, 0.6)");
+      xBg.setAttribute("rx", "3");
+      marginalGroup.appendChild(xBg);
+
+      // ベースライン (X軸マージナル下端)
+      const xBaseLine = document.createElementNS(svgNS, "line");
+      xBaseLine.setAttribute("x1", margin.left);
+      xBaseLine.setAttribute("y1", xBaseY);
+      xBaseLine.setAttribute("x2", margin.left + plotW);
+      xBaseLine.setAttribute("y2", xBaseY);
+      xBaseLine.setAttribute("stroke", guideStroke);
+      xBaseLine.setAttribute("stroke-width", "1");
+      marginalGroup.appendChild(xBaseLine);
+
+      // ヒストグラム (X軸)
+      if (mType === 'both' || mType === 'hist') {
+        const xHist = Stats.histogram(xData, scaleX.min, scaleX.max, binCount);
+        if (xHist.maxCount > 0) {
+          xHist.bins.forEach(bin => {
+            if (bin.count === 0) return;
+            const px0 = toPx(bin.x0);
+            const px1 = toPx(bin.x1);
+            const barW = Math.max(1, px1 - px0 - 1.5);
+            const barH = (bin.count / xHist.maxCount) * (marginalSize - 6);
+            const rect = document.createElementNS(svgNS, "rect");
+            rect.setAttribute("x", (px0 + 0.75).toFixed(1));
+            rect.setAttribute("y", (xBaseY - barH).toFixed(1));
+            rect.setAttribute("width", barW.toFixed(1));
+            rect.setAttribute("height", barH.toFixed(1));
+            rect.setAttribute("fill", histFill);
+            rect.setAttribute("stroke", histStroke);
+            rect.setAttribute("stroke-width", "1");
+            rect.setAttribute("rx", "2");
+
+            const tip = document.createElementNS(svgNS, "title");
+            tip.textContent = `X軸: [${bin.x0.toFixed(2)} 〜 ${bin.x1.toFixed(2)}]\n度数: ${bin.count}件 (${((bin.count / xHist.total) * 100).toFixed(1)}%)`;
+            rect.appendChild(tip);
+            marginalGroup.appendChild(rect);
+          });
+        }
+      }
+
+      // KDE曲線 (X軸)
+      if (mType === 'both' || mType === 'kde') {
+        const xKde = Stats.kde(xData, scaleX.min, scaleX.max, 80);
+        if (xKde.maxDensity > 0 && xKde.points.length > 1) {
+          let dPath = "";
+          let dArea = `M ${toPx(xKde.points[0].x).toFixed(1)} ${xBaseY.toFixed(1)}`;
+          xKde.points.forEach((pt, i) => {
+            const px = toPx(pt.x).toFixed(1);
+            const py = (xBaseY - (pt.density / xKde.maxDensity) * (marginalSize - 6)).toFixed(1);
+            if (i === 0) {
+              dPath += `M ${px} ${py}`;
+            } else {
+              dPath += ` L ${px} ${py}`;
+            }
+            dArea += ` L ${px} ${py}`;
+          });
+          const lastPx = toPx(xKde.points[xKde.points.length - 1].x).toFixed(1);
+          dArea += ` L ${lastPx} ${xBaseY.toFixed(1)} Z`;
+
+          const kdeArea = document.createElementNS(svgNS, "path");
+          kdeArea.setAttribute("d", dArea);
+          kdeArea.setAttribute("fill", kdeAreaFill);
+          kdeArea.style.pointerEvents = "none";
+          marginalGroup.appendChild(kdeArea);
+
+          const kdeLine = document.createElementNS(svgNS, "path");
+          kdeLine.setAttribute("d", dPath);
+          kdeLine.setAttribute("fill", "none");
+          kdeLine.setAttribute("stroke", kdeStroke);
+          kdeLine.setAttribute("stroke-width", "2");
+          kdeLine.setAttribute("stroke-linecap", "round");
+          kdeLine.setAttribute("stroke-linejoin", "round");
+          kdeLine.style.pointerEvents = "none";
+          marginalGroup.appendChild(kdeLine);
+        }
+      }
+
+      // X軸周辺分布 ラベル
+      const xMarginalLabel = document.createElementNS(svgNS, "text");
+      xMarginalLabel.setAttribute("x", margin.left + 6);
+      xMarginalLabel.setAttribute("y", xBaseY - marginalSize + 11);
+      xMarginalLabel.setAttribute("font-size", "9");
+      xMarginalLabel.setAttribute("font-weight", "600");
+      xMarginalLabel.setAttribute("fill", marginalLabelColor);
+      xMarginalLabel.setAttribute("letter-spacing", "0.03em");
+      xMarginalLabel.textContent = "X 分布 (周辺)";
+      marginalGroup.appendChild(xMarginalLabel);
+
+
+      // --- 2. Y軸マージナルプロット (プロット右側) ---
+      // 背景領域
+      const yBg = document.createElementNS(svgNS, "rect");
+      yBg.setAttribute("x", yBaseX);
+      yBg.setAttribute("y", margin.top);
+      yBg.setAttribute("width", marginalSize);
+      yBg.setAttribute("height", plotH);
+      yBg.setAttribute("fill", isDark ? "rgba(30, 41, 59, 0.25)" : "rgba(248, 250, 252, 0.6)");
+      yBg.setAttribute("rx", "3");
+      marginalGroup.appendChild(yBg);
+
+      // ベースライン (Y軸マージナル左端)
+      const yBaseLine = document.createElementNS(svgNS, "line");
+      yBaseLine.setAttribute("x1", yBaseX);
+      yBaseLine.setAttribute("y1", margin.top);
+      yBaseLine.setAttribute("x2", yBaseX);
+      yBaseLine.setAttribute("y2", margin.top + plotH);
+      yBaseLine.setAttribute("stroke", guideStroke);
+      yBaseLine.setAttribute("stroke-width", "1");
+      marginalGroup.appendChild(yBaseLine);
+
+      // ヒストグラム (Y軸: 横向き)
+      if (mType === 'both' || mType === 'hist') {
+        const yHist = Stats.histogram(yData, scaleY.min, scaleY.max, binCount);
+        if (yHist.maxCount > 0) {
+          yHist.bins.forEach(bin => {
+            if (bin.count === 0) return;
+            const py0 = toPy(bin.x0);
+            const py1 = toPy(bin.x1);
+            const topY = Math.min(py0, py1);
+            const barH = Math.max(1, Math.abs(py0 - py1) - 1.5);
+            const barW = (bin.count / yHist.maxCount) * (marginalSize - 6);
+            const rect = document.createElementNS(svgNS, "rect");
+            rect.setAttribute("x", yBaseX.toFixed(1));
+            rect.setAttribute("y", (topY + 0.75).toFixed(1));
+            rect.setAttribute("width", barW.toFixed(1));
+            rect.setAttribute("height", barH.toFixed(1));
+            rect.setAttribute("fill", histFill);
+            rect.setAttribute("stroke", histStroke);
+            rect.setAttribute("stroke-width", "1");
+            rect.setAttribute("rx", "2");
+
+            const tip = document.createElementNS(svgNS, "title");
+            tip.textContent = `Y軸: [${bin.x0.toFixed(2)} 〜 ${bin.x1.toFixed(2)}]\n度数: ${bin.count}件 (${((bin.count / yHist.total) * 100).toFixed(1)}%)`;
+            rect.appendChild(tip);
+            marginalGroup.appendChild(rect);
+          });
+        }
+      }
+
+      // KDE曲線 (Y軸: 横向き)
+      if (mType === 'both' || mType === 'kde') {
+        const yKde = Stats.kde(yData, scaleY.min, scaleY.max, 80);
+        if (yKde.maxDensity > 0 && yKde.points.length > 1) {
+          let dPath = "";
+          let dArea = `M ${yBaseX.toFixed(1)} ${toPy(yKde.points[0].x).toFixed(1)}`;
+          yKde.points.forEach((pt, i) => {
+            const py = toPy(pt.x).toFixed(1);
+            const px = (yBaseX + (pt.density / yKde.maxDensity) * (marginalSize - 6)).toFixed(1);
+            if (i === 0) {
+              dPath += `M ${px} ${py}`;
+            } else {
+              dPath += ` L ${px} ${py}`;
+            }
+            dArea += ` L ${px} ${py}`;
+          });
+          const lastPy = toPy(yKde.points[yKde.points.length - 1].x).toFixed(1);
+          dArea += ` L ${yBaseX.toFixed(1)} ${lastPy} Z`;
+
+          const kdeArea = document.createElementNS(svgNS, "path");
+          kdeArea.setAttribute("d", dArea);
+          kdeArea.setAttribute("fill", kdeAreaFill);
+          kdeArea.style.pointerEvents = "none";
+          marginalGroup.appendChild(kdeArea);
+
+          const kdeLine = document.createElementNS(svgNS, "path");
+          kdeLine.setAttribute("d", dPath);
+          kdeLine.setAttribute("fill", "none");
+          kdeLine.setAttribute("stroke", kdeStroke);
+          kdeLine.setAttribute("stroke-width", "2");
+          kdeLine.setAttribute("stroke-linecap", "round");
+          kdeLine.setAttribute("stroke-linejoin", "round");
+          kdeLine.style.pointerEvents = "none";
+          marginalGroup.appendChild(kdeLine);
+        }
+      }
+
+      // Y軸周辺分布 ラベル
+      const yMarginalLabel = document.createElementNS(svgNS, "text");
+      yMarginalLabel.setAttribute("x", yBaseX + 6);
+      yMarginalLabel.setAttribute("y", margin.top + 12);
+      yMarginalLabel.setAttribute("font-size", "9");
+      yMarginalLabel.setAttribute("font-weight", "600");
+      yMarginalLabel.setAttribute("fill", marginalLabelColor);
+      yMarginalLabel.setAttribute("letter-spacing", "0.03em");
+      yMarginalLabel.textContent = "Y 分布";
+      marginalGroup.appendChild(yMarginalLabel);
+
+      svg.appendChild(marginalGroup);
+    }
+
+    // グラフメインタイトル (クラスター凡例や周辺分布がある場合は上部にすっきり配置)
     if (this.options.title) {
       const mainTitle = document.createElementNS(svgNS, "text");
       mainTitle.setAttribute("x", margin.left);
-      mainTitle.setAttribute("y", showClusterLegend ? 20 : (margin.top - 16));
+      mainTitle.setAttribute("y", (showClusterLegend || showMarginal) ? 20 : (margin.top - 16));
       mainTitle.setAttribute("fill", theme.text);
       mainTitle.setAttribute("font-size", "16");
       mainTitle.setAttribute("font-weight", "bold");
@@ -1530,4 +1768,9 @@ class ScatterPlot {
   }
 }
 
-window.ScatterPlot = ScatterPlot;
+if (typeof window !== 'undefined') {
+  window.ScatterPlot = ScatterPlot;
+}
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = ScatterPlot;
+}

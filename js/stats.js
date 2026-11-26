@@ -442,7 +442,95 @@ const Stats = {
     if (ry < 18) ry = 18;
 
     return { cx, cy, rx, ry, angleDeg };
+  },
+
+  // 1次元ヒストグラム (周辺分布・マージナルプロット用)
+  histogram(values, minVal, maxVal, binCount = 12) {
+    if (!values || values.length === 0) return { bins: [], maxCount: 0, binWidth: 0, total: 0 };
+    const valid = values.filter(v => typeof v === 'number' && !isNaN(v) && isFinite(v));
+    if (valid.length === 0) return { bins: [], maxCount: 0, binWidth: 0, total: 0 };
+
+    const min = typeof minVal === 'number' ? minVal : Math.min(...valid);
+    const max = typeof maxVal === 'number' ? maxVal : Math.max(...valid);
+    const count = Math.max(3, Math.min(50, parseInt(binCount, 10) || 12));
+    const range = max - min;
+    const binWidth = range > 0 ? range / count : 1;
+
+    const bins = [];
+    for (let i = 0; i < count; i++) {
+      const x0 = min + i * binWidth;
+      const x1 = i === count - 1 ? max : min + (i + 1) * binWidth;
+      bins.push({ index: i, x0, x1, xMid: (x0 + x1) / 2, count: 0 });
+    }
+
+    let maxCount = 0;
+    for (const v of valid) {
+      if (v < min || v > max) continue;
+      let idx = Math.floor((v - min) / binWidth);
+      if (idx >= count) idx = count - 1;
+      if (idx < 0) idx = 0;
+      bins[idx].count++;
+    }
+
+    for (const b of bins) {
+      if (b.count > maxCount) maxCount = b.count;
+    }
+
+    return { bins, maxCount, binWidth, total: valid.length };
+  },
+
+  // ガウスカーネル密度推定 (KDE: Kernel Density Estimation)
+  kde(values, minVal, maxVal, steps = 80) {
+    if (!values || values.length === 0) return { points: [], maxDensity: 0 };
+    const valid = values.filter(v => typeof v === 'number' && !isNaN(v) && isFinite(v));
+    const n = valid.length;
+    if (n === 0) return { points: [], maxDensity: 0 };
+
+    const min = typeof minVal === 'number' ? minVal : Math.min(...valid);
+    const max = typeof maxVal === 'number' ? maxVal : Math.max(...valid);
+    const range = Math.max(1e-6, max - min);
+
+    // バンド幅計算 (Silverman's rule of thumb)
+    const std = this.stdDev(valid);
+    const sorted = [...valid].sort((a, b) => a - b);
+    const q1 = sorted[Math.floor(n * 0.25)];
+    const q3 = sorted[Math.floor(n * 0.75)];
+    const iqr = q3 - q1;
+    let a = std;
+    if (iqr > 0 && iqr / 1.34 < a) {
+      a = iqr / 1.34;
+    }
+    if (a <= 0) a = range / 10;
+    let h = 0.9 * a * Math.pow(n, -0.2);
+    if (h <= 0 || !isFinite(h)) h = range / 20;
+
+    const numSteps = Math.max(20, Math.min(200, steps));
+    const points = [];
+    let maxDensity = 0;
+    const invH = 1 / h;
+    const normConst = 1 / (n * h * Math.sqrt(2 * Math.PI));
+
+    for (let s = 0; s < numSteps; s++) {
+      const x = min + (s / (numSteps - 1)) * range;
+      let sum = 0;
+      for (let i = 0; i < n; i++) {
+        const u = (x - valid[i]) * invH;
+        if (u * u < 25) {
+          sum += Math.exp(-0.5 * u * u);
+        }
+      }
+      const density = sum * normConst;
+      if (density > maxDensity) maxDensity = density;
+      points.push({ x, density });
+    }
+
+    return { points, maxDensity, bandwidth: h };
   }
 };
 
-window.Stats = Stats;
+if (typeof window !== 'undefined') {
+  window.Stats = Stats;
+}
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = Stats;
+}
