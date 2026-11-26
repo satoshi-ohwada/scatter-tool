@@ -980,6 +980,22 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.rangeFontSize.value = 11;
     elements.valFontSize.textContent = '11px';
 
+    if (elements.chkMarginalPlots) {
+      elements.chkMarginalPlots.checked = false;
+      if (elements.marginalSubOptions) {
+        elements.marginalSubOptions.style.display = 'none';
+      }
+    }
+    if (elements.selectMarginalType) {
+      elements.selectMarginalType.value = 'both';
+    }
+    if (elements.rangeMarginalBins) {
+      elements.rangeMarginalBins.value = 12;
+      if (elements.valMarginalBins) {
+        elements.valMarginalBins.textContent = '12';
+      }
+    }
+
     // 3. 全画面表示中なら通常表示に戻す
     if (elements.chartCard && elements.chartCard.classList.contains('maximized')) {
       elements.chartCard.classList.remove('maximized');

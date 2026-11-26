@@ -502,9 +502,12 @@ const Stats = {
     }
     if (a <= 0) a = range / 10;
     let h = 0.9 * a * Math.pow(n, -0.2);
-    if (h <= 0 || !isFinite(h)) h = range / 20;
 
+    // グリッドサンプリング抜け防止 (hが評価点間隔より小さいと外れ値等のピークが消失するのを防止)
     const numSteps = Math.max(20, Math.min(200, steps));
+    const gridDelta = range / (numSteps - 1);
+    const minH = Math.max(gridDelta * 0.75, range / 120);
+    if (h < minH || !isFinite(h)) h = minH;
     const points = [];
     let maxDensity = 0;
     const invH = 1 / h;
