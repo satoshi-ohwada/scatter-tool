@@ -1344,13 +1344,33 @@ class ScatterPlot {
       const xBaseY = margin.top - marginalGap;
       const yBaseX = margin.left + plotW + marginalGap;
 
+      const isAcademic = (this.options.theme === 'academic');
       const isDark = theme.themeKey === 'dark' || (theme.bg && (theme.bg === '#0f172a' || theme.bg === '#1e293b' || theme.bg === '#111827'));
-      const histFill = isDark ? 'rgba(96, 165, 250, 0.32)' : 'rgba(0, 90, 255, 0.20)';
-      const histStroke = isDark ? 'rgba(147, 197, 253, 0.65)' : 'rgba(0, 90, 255, 0.50)';
-      const kdeStroke = theme.pointFill || (isDark ? '#38bdf8' : '#0284c7');
-      const kdeAreaFill = isDark ? 'rgba(56, 189, 248, 0.15)' : 'rgba(2, 132, 199, 0.10)';
-      const guideStroke = theme.grid || (isDark ? '#334155' : '#e2e8f0');
-      const marginalLabelColor = isDark ? '#94a3b8' : '#64748b';
+
+      // テーマ連動カラーパレット (モノクロ・エメラルド・バイブラント・ネイビーに完全調和)
+      const basePointColor = theme.pointFill || (isAcademic ? '#525252' : '#2563eb');
+      const histFill = isAcademic
+        ? 'rgba(82, 82, 82, 0.22)' // 完全モノクロ: ニュートラルグレー
+        : (isDark ? 'rgba(96, 165, 250, 0.32)' : this._hexToRgba(basePointColor, 0.22));
+
+      const histStroke = isAcademic
+        ? 'rgba(23, 23, 23, 0.65)' // 完全モノクロ: 濃黒枠線
+        : (isDark ? 'rgba(147, 197, 253, 0.65)' : this._hexToRgba(basePointColor, 0.60));
+
+      const kdeStroke = isAcademic
+        ? (theme.axis || '#171717') // 完全モノクロ: 純黒ライン
+        : (theme.pointFill || (isDark ? '#38bdf8' : '#0284c7'));
+
+      const kdeAreaFill = isAcademic
+        ? 'rgba(82, 82, 82, 0.12)' // 完全モノクロ: 淡灰グラデーション
+        : (isDark ? 'rgba(56, 189, 248, 0.15)' : this._hexToRgba(kdeStroke, 0.12));
+
+      const guideStroke = theme.grid || (isDark ? '#334155' : (isAcademic ? '#e5e5e5' : '#e2e8f0'));
+      const marginalLabelColor = isAcademic ? '#171717' : (isDark ? '#94a3b8' : '#64748b');
+      const marginalBadgeBg = isAcademic
+        ? 'rgba(255, 255, 255, 0.95)'
+        : (isDark ? 'rgba(15, 23, 42, 0.75)' : 'rgba(255, 255, 255, 0.85)');
+      const marginalBadgeBorder = isAcademic ? '#737373' : guideStroke;
       const xColName = isCluster ? `${this.options.xTitle || xKey} (Zスコア)` : (this.options.xTitle || xKey);
       const yColName = isCluster ? `${this.options.yTitle || yKey} (Zスコア)` : (this.options.yTitle || yKey);
 
@@ -1448,8 +1468,8 @@ class ScatterPlot {
       xBadgeBg.setAttribute("width", xBadgeW);
       xBadgeBg.setAttribute("height", "15");
       xBadgeBg.setAttribute("rx", "3");
-      xBadgeBg.setAttribute("fill", isDark ? "rgba(15, 23, 42, 0.75)" : "rgba(255, 255, 255, 0.85)");
-      xBadgeBg.setAttribute("stroke", guideStroke);
+      xBadgeBg.setAttribute("fill", marginalBadgeBg);
+      xBadgeBg.setAttribute("stroke", marginalBadgeBorder);
       xBadgeBg.setAttribute("stroke-width", "0.6");
       xBadgeG.appendChild(xBadgeBg);
 
@@ -1561,8 +1581,8 @@ class ScatterPlot {
       yBadgeBg.setAttribute("width", yBadgeW);
       yBadgeBg.setAttribute("height", "15");
       yBadgeBg.setAttribute("rx", "3");
-      yBadgeBg.setAttribute("fill", isDark ? "rgba(15, 23, 42, 0.75)" : "rgba(255, 255, 255, 0.85)");
-      yBadgeBg.setAttribute("stroke", guideStroke);
+      yBadgeBg.setAttribute("fill", marginalBadgeBg);
+      yBadgeBg.setAttribute("stroke", marginalBadgeBorder);
       yBadgeBg.setAttribute("stroke-width", "0.6");
       yBadgeG.appendChild(yBadgeBg);
 
@@ -1617,6 +1637,19 @@ class ScatterPlot {
       clusterResult,
       isCluster
     };
+  }
+
+  // HEXカラーをRGBA文字列に変換するヘルパー (テーマ色連動用)
+  _hexToRgba(hex, alpha = 1) {
+    if (!hex || typeof hex !== 'string') return `rgba(0, 0, 0, ${alpha})`;
+    let c = hex.trim().replace('#', '');
+    if (c.length === 3) {
+      c = c[0] + c[0] + c[1] + c[1] + c[2] + c[2];
+    }
+    const r = parseInt(c.substring(0, 2), 16) || 0;
+    const g = parseInt(c.substring(2, 4), 16) || 0;
+    const b = parseInt(c.substring(4, 6), 16) || 0;
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   }
 
   // RGBA文字列をHEXとAlphaに分解するヘルパー (SVG標準互換用)
