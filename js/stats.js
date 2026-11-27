@@ -444,15 +444,25 @@ const Stats = {
     return { cx, cy, rx, ry, angleDeg };
   },
 
+  // スタージェスの公式による最適ヒストグラム階級数 (Sturges' formula: k = 1 + log2(n))
+  // 統計学で最も標準的に使われる階級数決定則 (JIS Z 9041-1 / Excel標準)
+  sturgesBinCount(n) {
+    if (!n || n < 1) return 5;
+    const k = Math.ceil(1 + Math.log2(n));
+    return Math.max(5, Math.min(30, k));
+  },
+
   // 1次元ヒストグラム (周辺分布・マージナルプロット用)
-  histogram(values, minVal, maxVal, binCount = 12) {
+  histogram(values, minVal, maxVal, binCount = null) {
     if (!values || values.length === 0) return { bins: [], maxCount: 0, binWidth: 0, total: 0 };
     const valid = values.filter(v => typeof v === 'number' && !isNaN(v) && isFinite(v));
     if (valid.length === 0) return { bins: [], maxCount: 0, binWidth: 0, total: 0 };
 
     const min = typeof minVal === 'number' ? minVal : Math.min(...valid);
     const max = typeof maxVal === 'number' ? maxVal : Math.max(...valid);
-    const count = Math.max(3, Math.min(50, parseInt(binCount, 10) || 12));
+    const defaultBins = this.sturgesBinCount(valid.length);
+    const rawCount = binCount !== null && binCount !== undefined ? parseInt(binCount, 10) : defaultBins;
+    const count = Math.max(3, Math.min(50, isNaN(rawCount) ? defaultBins : rawCount));
     const range = max - min;
     const binWidth = range > 0 ? range / count : 1;
 

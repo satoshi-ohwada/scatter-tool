@@ -42,7 +42,7 @@ class ScatterPlot {
       showConfidenceInterval: false,
       showMarginalPlots: false, // 各軸外側の周辺分布 (ヒストグラム & KDE)
       marginalType: 'both', // 'both', 'hist', 'kde'
-      marginalBins: 12,
+      marginalBins: null, // null時はスタージェスの公式 (1 + log2(n)) により自動算出
       marginalSize: 52,
       labelMode: 'all', // 'all', 'outliers', 'top5', 'none'
       showLeaderLines: true,
@@ -1335,7 +1335,10 @@ class ScatterPlot {
 
       const xData = isCluster ? validRows.map(r => r._zx) : xValues;
       const yData = isCluster ? validRows.map(r => r._zy) : yValues;
-      const binCount = Math.max(5, Math.min(30, parseInt(this.options.marginalBins, 10) || 12));
+      const sturgesK = Stats.sturgesBinCount(xData.length);
+      const binCount = this.options.marginalBins
+        ? Math.max(3, Math.min(50, parseInt(this.options.marginalBins, 10) || sturgesK))
+        : sturgesK;
       const mType = this.options.marginalType || 'both'; // 'both', 'hist', 'kde'
 
       const xBaseY = margin.top - marginalGap;

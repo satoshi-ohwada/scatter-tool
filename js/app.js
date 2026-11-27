@@ -66,6 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
     chkMarginalPlots: document.getElementById('chkMarginalPlots'),
     marginalSubOptions: document.getElementById('marginalSubOptions'),
     selectMarginalType: document.getElementById('selectMarginalType'),
+    badgeOptimalBins: document.getElementById('badgeOptimalBins'),
     rangeMarginalBins: document.getElementById('rangeMarginalBins'),
     valMarginalBins: document.getElementById('valMarginalBins'),
 
@@ -256,7 +257,24 @@ document.addEventListener('DOMContentLoaded', () => {
       yKey
     }, options);
 
+    updateOptimalMarginalBins(activeRows.length);
     updateSummaryDisplay(state.currentStats, xKey, yKey);
+  }
+
+  // 最適ヒストグラム階級数 (スタージェスの公式: 1 + log2(n)) の自動判定とUI反映
+  function updateOptimalMarginalBins(validCount) {
+    if (!elements.badgeOptimalBins) return;
+    const n = typeof validCount === 'number' ? validCount : (state.tableData ? state.tableData.rows.length : 0);
+    const k = Stats.sturgesBinCount(n);
+    elements.badgeOptimalBins.textContent = `自動: k = ${k} (スタージェス則)`;
+    elements.badgeOptimalBins.title = `有効データ件数 n = ${n} に対し、統計標準「スタージェスの公式 (1 + log2(n))」に基づき階級数 ${k} を自動算出（クリックで推奨値に復帰）`;
+
+    if (elements.rangeMarginalBins && !elements.rangeMarginalBins.dataset.userModified) {
+      elements.rangeMarginalBins.value = k;
+      if (elements.valMarginalBins) {
+        elements.valMarginalBins.textContent = k;
+      }
+    }
   }
 
   // 最適クラスタ数 (k) の自動判定とUI反映
@@ -883,10 +901,29 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   if (elements.rangeMarginalBins) {
     elements.rangeMarginalBins.addEventListener('input', (e) => {
+      elements.rangeMarginalBins.dataset.userModified = 'true';
       if (elements.valMarginalBins) {
         elements.valMarginalBins.textContent = e.target.value;
       }
       redrawChart();
+    });
+  }
+
+  // 自動算出バッジクリックでスタージェス則の推奨値に即座に復元
+  if (elements.badgeOptimalBins) {
+    elements.badgeOptimalBins.style.cursor = 'pointer';
+    elements.badgeOptimalBins.addEventListener('click', () => {
+      if (elements.rangeMarginalBins) {
+        delete elements.rangeMarginalBins.dataset.userModified;
+        const n = state.tableData ? state.tableData.rows.filter(r => !state.excludedRowIds.has(r._rowId)).length : 0;
+        const k = Stats.sturgesBinCount(n);
+        elements.rangeMarginalBins.value = k;
+        if (elements.valMarginalBins) {
+          elements.valMarginalBins.textContent = k;
+        }
+        showToast(`階級数をスタージェス則の自動算出値 (k=${k}) にリセットしました`, 'info');
+        redrawChart();
+      }
     });
   }
 
@@ -990,9 +1027,12 @@ document.addEventListener('DOMContentLoaded', () => {
       elements.selectMarginalType.value = 'both';
     }
     if (elements.rangeMarginalBins) {
-      elements.rangeMarginalBins.value = 12;
+      delete elements.rangeMarginalBins.dataset.userModified;
+      const n = state.tableData ? state.tableData.rows.filter(r => !state.excludedRowIds.has(r._rowId)).length : 0;
+      const k = Stats.sturgesBinCount(n);
+      elements.rangeMarginalBins.value = k;
       if (elements.valMarginalBins) {
-        elements.valMarginalBins.textContent = '12';
+        elements.valMarginalBins.textContent = k;
       }
     }
 
