@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/scatter-tool.png" width="128" height="128" alt="Scatter Tool Icon" style="border-radius: 26px;">
+</p>
+
 # 散布図作成ツール (QuickScatter)
 
 ExcelやCSVの表データから、**「平均値中心の4象限分割」「45度線」「1次回帰線」「重なり防止の引き出し線付きラベル」**を備えた高品質な散布図を手軽に作成・エクスポートできる完全ローカルWebアプリケーションです。

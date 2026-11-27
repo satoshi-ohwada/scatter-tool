@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- ベース外枠: 角丸四角形 (シリーズ共通: 228x228, rx=48, ry=48, ベース色: #1e1b4b ディープインディゴ) -->
+  <rect x="14" y="14" width="228" height="228" rx="48" fill="#1e1b4b" stroke="rgba(255, 255, 255, 0.12)" stroke-width="1.5" />
+
+  <!-- プロット領域グリッド線 (繊細な破線) -->
+  <g stroke="rgba(255, 255, 255, 0.10)" stroke-width="1" stroke-dasharray="3,3">
+    <!-- 横グリッド -->
+    <line x1="58" y1="156" x2="206" y2="156" />
+    <line x1="58" y1="120" x2="206" y2="120" />
+    <line x1="58" y1="84" x2="206" y2="84" />
+    <!-- 縦グリッド -->
+    <line x1="96" y1="68" x2="96" y2="194" />
+    <line x1="132" y1="68" x2="132" y2="194" />
+    <line x1="168" y1="68" x2="168" y2="194" />
+  </g>
+
+  <!-- マージナルプロット (周辺分布: 上部X軸ヒストグラム & KDE) -->
+  <g fill="rgba(56, 189, 248, 0.32)" stroke="#38bdf8" stroke-width="0.8">
+    <rect x="74" y="58" width="16" height="8" rx="1.5" />
+    <rect x="94" y="50" width="16" height="16" rx="1.5" />
+    <rect x="114" y="44" width="16" height="22" rx="1.5" />
+    <rect x="134" y="40" width="16" height="26" rx="1.5" />
+    <rect x="154" y="46" width="16" height="20" rx="1.5" />
+    <rect x="174" y="54" width="16" height="12" rx="1.5" />
+  </g>
+  <!-- KDE曲線 (上部) -->
+  <path d="M 68 66 C 90 62, 100 48, 120 44 C 136 40, 150 42, 166 48 C 182 54, 192 64, 204 66" fill="none" stroke="#38bdf8" stroke-width="1.8" stroke-linecap="round" />
+
+  <!-- 座標軸 (L字型) -->
+  <!-- Y軸 -->
+  <line x1="58" y1="194" x2="58" y2="68" stroke="#cbd5e1" stroke-width="2.5" stroke-linecap="round" />
+  <!-- X軸 -->
+  <line x1="58" y1="194" x2="206" y2="194" stroke="#cbd5e1" stroke-width="2.5" stroke-linecap="round" />
+
+  <!-- 軸矢印アクセント -->
+  <circle cx="58" cy="68" r="2.2" fill="#cbd5e1" />
+  <circle cx="206" cy="194" r="2.2" fill="#cbd5e1" />
+
+  <!-- 回帰線 (トレンドライン: ネオンローズピンク) -->
+  <!-- グロー背景線 -->
+  <line x1="66" y1="184" x2="198" y2="82" stroke="rgba(244, 63, 94, 0.28)" stroke-width="8" stroke-linecap="round" />
+  <!-- メイン回帰直線 -->
+  <line x1="66" y1="184" x2="198" y2="82" stroke="#f43f5e" stroke-width="3.5" stroke-linecap="round" />
+
+  <!-- 散布図プロット点群 (Scatter Data Points) -->
+  <!-- 点1 (左下、シアン) -->
+  <circle cx="80" cy="172" r="9" fill="rgba(56, 189, 248, 0.28)" />
+  <circle cx="80" cy="172" r="5" fill="#38bdf8" stroke="#ffffff" stroke-width="1.2" />
+
+  <!-- 点2 (低め、エメラルド) -->
+  <circle cx="98" cy="154" r="4.5" fill="#34d399" stroke="#ffffff" stroke-width="1.2" />
+
+  <!-- 点3 (やや下外れ、アンバー) -->
+  <circle cx="112" cy="168" r="4" fill="#fbbf24" stroke="#ffffff" stroke-width="1.2" />
+
+  <!-- 点4 (中央付近、ローズピンク・光彩付き) -->
+  <circle cx="126" cy="132" r="11" fill="rgba(244, 63, 94, 0.28)" />
+  <circle cx="126" cy="132" r="6" fill="#f43f5e" stroke="#ffffff" stroke-width="1.4" />
+
+  <!-- 点5 (やや上外れ、シアン) -->
+  <circle cx="116" cy="116" r="4.5" fill="#38bdf8" stroke="#ffffff" stroke-width="1.2" />
+
+  <!-- 点6 (中高、パープル/バイオレット) -->
+  <circle cx="148" cy="120" r="5" fill="#a78bfa" stroke="#ffffff" stroke-width="1.2" />
+
+  <!-- 点7 (右上クラスタ、エメラルド・光彩付き) -->
+  <circle cx="164" cy="100" r="10" fill="rgba(52, 211, 153, 0.28)" />
+  <circle cx="164" cy="100" r="5.5" fill="#34d399" stroke="#ffffff" stroke-width="1.4" />
+
+  <!-- 点8 (右上高め、アンバー) -->
+  <circle cx="180" cy="108" r="4" fill="#fbbf24" stroke="#ffffff" stroke-width="1.2" />
+
+  <!-- 点9 (最右上、シアン) -->
+  <circle cx="192" cy="88" r="5" fill="#38bdf8" stroke="#ffffff" stroke-width="1.2" />
+
+  <!-- 信頼区間/相関の広がりを暗示する補助ドット -->
+  <circle cx="140" cy="144" r="3" fill="#cbd5e1" opacity="0.75" />
+  <circle cx="160" cy="136" r="3.2" fill="#cbd5e1" opacity="0.65" />
+  <circle cx="88" cy="140" r="3.5" fill="#a78bfa" opacity="0.8" />
+</svg>
